@@ -1,9 +1,16 @@
 from django.db import models
+from django.core.exceptions import ObjectDoesNotExist
 import uuid
 
 # Create your models here.
 class AbstractManager(models.Manager):
-    pass
+
+    def get_by_id(self, id):
+        try:
+            instance = self.get(id)
+            return instance
+        except (ObjectDoesNotExist, ValueError, TypeError):
+            return
 
 class AbstractModel(models.Model):
     PublicId = models.UUIDField(unique=True, db_index=True, default=uuid.uuid4, editable=False)
