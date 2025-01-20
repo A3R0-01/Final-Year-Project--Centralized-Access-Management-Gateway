@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 
 
-class CitizenConfig(AppConfig):
+class AbstractConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'core.citizen'
-    label = 'citizen'
+    name = 'core.abstract'
+    label = 'abstract'
