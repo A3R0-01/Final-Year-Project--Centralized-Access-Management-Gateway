@@ -2,15 +2,16 @@ from django.db import models
 import uuid
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.exceptions import NotFound
 
 # Create your models here.
 class CitizenManager(BaseUserManager):
     def get_by_id(self, id):
         try:
-            instance = self.get(id)
+            instance = self.get(PublicId=id)
             return instance
         except (ObjectDoesNotExist, ValueError, TypeError):
-            return
+            raise NotFound('Could Not Find User')
 
     def create_user(self, UserName,Email, FirstName,Surname,NationalId,DOB,SecondName=None, password=None, **kwargs):
         """Create and return a `User` with an email, phone number, username and password."""
