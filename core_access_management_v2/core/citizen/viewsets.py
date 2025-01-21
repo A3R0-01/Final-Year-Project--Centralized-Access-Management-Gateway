@@ -13,9 +13,10 @@ class CitizenViewSet(ModelViewSet):
 
     def get_queryset(self):
         return Citizen.objects.all()
-    
+
     def get_object(self):
         id = self.kwargs['pk']
         citizen = Citizen.objects.get_by_id(id)
         self.check_object_permissions(self.request, citizen)
         return citizen
+
