@@ -20,7 +20,7 @@ class RegisterViewSet(ViewSet):
         return Response({
             "citizen": serializer.data,
             "refresh": str(refresh),
-            "token": str(refresh.access_token),
+            "access": str(refresh.access_token),
         }, status=HTTP_201_CREATED)
 
 

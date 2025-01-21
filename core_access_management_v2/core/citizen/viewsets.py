@@ -8,7 +8,7 @@ from .models import Citizen
 
 class CitizenViewSet(ModelViewSet):
     serializer_class = CitizenSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     http_method_names = ('get', 'patch')
 
     def get_queryset(self):
