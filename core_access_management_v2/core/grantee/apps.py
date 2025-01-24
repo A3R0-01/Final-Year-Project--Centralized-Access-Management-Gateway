@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 
 
-class AbstractConfig(AppConfig):
+class GranteeConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'core.abstract'
-    label = 'abstract'
+    name = 'core.grantee'
+    label = 'grantee'
