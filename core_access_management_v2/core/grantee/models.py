@@ -1,5 +1,5 @@
 from django.db import models
-from core.abstract import AbstractModel, AbstractManager
+from core.abstract.models import AbstractModel, AbstractManager
 
 class GranteeManager(AbstractManager):
     pass

@@ -20,5 +20,9 @@ class AbstractModel(models.Model):
 
     objects:AbstractManager = AbstractManager()
 
+    def get_model_fields(self) -> list[str]:
+        fields = self._meta.get_fields()
+        attributes = [field.name for field in fields if field.concrete]
+        return attributes
     class Meta:
         abstract = True

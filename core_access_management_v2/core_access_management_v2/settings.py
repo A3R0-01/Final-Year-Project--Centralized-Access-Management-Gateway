@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'core',
     'core.citizen',
     'core.auth',
+    'core.siteManager',
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ( 'rest_framework_simplejwt.authentication.JWTAuthentication',),
