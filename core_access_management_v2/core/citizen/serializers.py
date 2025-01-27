@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
+from core.abstract.serializers import AbstractModelSerializer
 from .models import Citizen
 
 class CitizenSerializer(serializers.ModelSerializer):
@@ -17,4 +18,15 @@ class CitizenSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id', 'is_active', 'Created', 'Updated'
+        ]
+
+class SiteManagerCitizenSerializer(AbstractModelSerializer):
+
+    class Meta:
+        model : Citizen = Citizen
+        fields : list[str] = [
+            'id', 'UserName', 'NationalId', 'Updated', 'Created'
+        ]
+        read_only_fields : list[str] = [
+            'id', 'UserName', 'NationalId', 'Updated', 'Created'
         ]

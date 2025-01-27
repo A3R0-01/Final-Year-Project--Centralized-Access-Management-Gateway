@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from core.citizen.serializers import CitizenSerializer, Citizen
 
-class RegisterSerializer(CitizenSerializer):
+class RegisterCitizenSerializer(CitizenSerializer):
     password = serializers.CharField(max_length=128, min_length=8, write_only=True, required=True)
 
     class Meta:

@@ -3,13 +3,13 @@ from rest_framework.viewsets import ViewSet
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from core.auth.serializers import RegisterSerializer
+from core.auth.serializers import RegisterCitizenSerializer
 from rest_framework.permissions import AllowAny
 
 class RegisterViewSet(ViewSet):
     http_method_names = ['post']
     permission_classes = (AllowAny,)
-    serializer_class = RegisterSerializer
+    serializer_class = RegisterCitizenSerializer
     
     @atomic
     def create(self,request, *args, **kwargs):
