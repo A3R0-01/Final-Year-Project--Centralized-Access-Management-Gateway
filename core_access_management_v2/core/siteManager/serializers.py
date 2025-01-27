@@ -1,12 +1,12 @@
 from core.abstract.serializers import AbstractModelSerializer
 from core.siteManager.models import SiteManager
-from core.citizen.serializers import SiteManagerCitizenSerializer
+from core.citizen.serializers import StaffCitizenSerializer
 
 class SiteManagerSerializer(AbstractModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['Citizen'] = SiteManagerCitizenSerializer(instance.Citizen).data
+        data['Citizen'] = StaffCitizenSerializer(instance.Citizen).data
         return data
 
     class Meta:

@@ -20,7 +20,7 @@ class CitizenSerializer(serializers.ModelSerializer):
             'id', 'is_active', 'Created', 'Updated'
         ]
 
-class SiteManagerCitizenSerializer(AbstractModelSerializer):
+class StaffCitizenSerializer(AbstractModelSerializer):
 
     class Meta:
         model : Citizen = Citizen
