@@ -8,7 +8,7 @@ class IsSiteManager(JWTAuthentication):
     def authenticate(self, request):
         # ManagerPassword, ManagerUserName = request.data['ManagerPassword'], request.data['ManagerUserName']
         authenticatedUser, token =super().authenticate(request)
-        if hasattr(authenticatedUser, 'siteManager'):
+        if hasattr(authenticatedUser, 'sitemanager'):
             # siteManager: SiteManager = authenticatedUser.siteManager
             # if siteManager.ManagerUserName == ManagerUserName and siteManager.check_password(ManagerPassword):
             return authenticatedUser, token

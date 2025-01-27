@@ -19,9 +19,9 @@ class SiteManager(AbstractModel, AbstractBaseUser):
     SecondEmail = models.EmailField(unique=True, null=True)
 
     objects : SiteManagerManager = SiteManagerManager()
-    USERNAME_FIELD = 'Email'
-    REQUIRED_FIELDS = ['UserName']
-    
+    USERNAME_FIELD = 'FirstEmail'
+    REQUIRED_FIELDS = ['ManagerUserName']
+
     def __str__(self):
         return f'Site Manager Account: {self.ManagerUserName}, {self.FirstEmail}, {self.SecondEmail}'
 

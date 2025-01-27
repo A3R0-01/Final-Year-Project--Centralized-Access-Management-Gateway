@@ -1,10 +1,15 @@
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.settings import api_settings
+from rest_framework.fields import empty
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.models import update_last_login
 from core.citizen.serializers import CitizenSerializer
 from core.siteManager.serializers import SiteManagerSerializer
 
+INVALID_DATA = {
+                    'access': 'denied',
+                    'code': 'bad request'
+                }
 class LoginCitizenSerializer(TokenObtainPairSerializer):
     
 
@@ -22,17 +27,28 @@ class LoginCitizenSerializer(TokenObtainPairSerializer):
         return data
 
 class LoginSiteManagerSerializer(TokenObtainPairSerializer):
+    ManagerPassword = None
+    ManagerUserName = None
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ManagerPassword = kwargs['data']['ManagerPassword']
+        self.ManagerUserName = kwargs['data']['ManagerUserName']
+
     def validate(self, attrs):
         data =  super().validate(attrs)
         refresh = self.get_token(self.user)
-        if hasattr(self.user, 'siteManager'):
-            ManagerPassword, ManagerUserName = attrs['ManagerPassword'], attrs['ManagerUserName']
-            if ManagerPassword == self.user.check_password(ManagerPassword) and ManagerUserName == self.user.siteManager.ManagerUserName:
-                data['user'] = SiteManagerSerializer(self.user.siteManager).data
+        if hasattr(self.user, 'sitemanager'):
+            # ManagerPassword, ManagerUserName = attrs['ManagerPassword'], attrs['ManagerUserName']
+            if self.user.sitemanager.check_password(self.ManagerPassword) and self.ManagerUserName == self.user.sitemanager.ManagerUserName:
+                data['user'] = SiteManagerSerializer(self.user.sitemanager).data
                 data['refresh'] = str(refresh)
                 data['access'] = str(refresh.access_token)
                 if api_settings.UPDATE_LAST_LOGIN:
                     update_last_login(None, self.user)
                 return data
 
-        AuthenticationFailed('Invalid Credentials')
+
+        return INVALID_DATA
+
+    def is_valid(self, *, raise_exception=False):
+        return super().is_valid(raise_exception=raise_exception)

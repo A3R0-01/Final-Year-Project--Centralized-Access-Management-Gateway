@@ -1,2 +1,2 @@
 from .register import RegisterCitizenSerializer
-from .login import LoginCitizenSerializer, LoginSiteManagerSerializer
+from .login import LoginCitizenSerializer, LoginSiteManagerSerializer, INVALID_DATA

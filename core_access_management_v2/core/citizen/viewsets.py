@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.exceptions import NotFound, PermissionDenied, server_error
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+from core.abstract.viewset import AbstractSiteManagerModelViewSet
 from .serializers import CitizenSerializer
 from .models import Citizen
 # Create your views here.
@@ -23,4 +24,11 @@ class CitizenViewSet(ModelViewSet):
         except:
             server_error()
         return citizen
+
+class SiteManagerCitizenModelViewSet(AbstractSiteManagerModelViewSet):
+    http_method_names = ('patch', 'get')
+    permission_classes = (IsAuthenticated,)
+    serializer_class = CitizenSerializer
+
+
 
