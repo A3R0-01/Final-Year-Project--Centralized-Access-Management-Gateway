@@ -14,12 +14,14 @@ class SiteManagerManager(AbstractManager):
 
 class SiteManager(AbstractModel, AbstractBaseUser):
     ManagerUserName = models.CharField(unique=True, max_length=100)
-    Citizen = models.ForeignKey(to='citizen.Citizen', on_delete=models.PROTECT)
+    Citizen = models.OneToOneField(to='citizen.Citizen', on_delete=models.PROTECT)
     FirstEmail = models.EmailField(unique=True)
-    SecondEmail = models.EmailField(unique=True)
+    SecondEmail = models.EmailField(unique=True, null=True)
 
     objects : SiteManagerManager = SiteManagerManager()
-
+    USERNAME_FIELD = 'Email'
+    REQUIRED_FIELDS = ['UserName']
+    
     def __str__(self):
         return f'Site Manager Account: {self.ManagerUserName}, {self.FirstEmail}, {self.SecondEmail}'
 
