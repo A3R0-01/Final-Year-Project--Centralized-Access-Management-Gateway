@@ -3,13 +3,14 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.response import Response
-from .serializers import AbstractSerializer
+from .serializers import AbstractModelSerializer
+from .authenticationClasses import IsSiteManager
 # Create your views here.
 
 class AbstractModelViewSet(ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly,)
     http_method_names = ['get', 'post', 'patch']
-    serializer_class : AbstractSerializer = AbstractSerializer
+    serializer_class : AbstractModelSerializer = AbstractModelSerializer
 
     def get_object(self):
         id = self.kwargs['pk']
@@ -21,7 +22,18 @@ class AbstractModelViewSet(ModelViewSet):
         return self.serializer_class.Meta.model.objects.all()
     
     def create(self, request, *args, **kwargs):
-        serializer : AbstractSerializer = self.serializer_class(data=request.data)
+        serializer : AbstractModelSerializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer=serializer)
         return Response(serializer.data, HTTP_201_CREATED)
+    
+class AbstractSiteManagerModelViewSet(AbstractModelViewSet):
+    def get_authenticators(self):
+        customAuthenticators = [IsSiteManager()]
+        return customAuthenticators
+
+    http_method_names = ['get', 'post', 'patch']
+    serializer_class = AbstractModelSerializer
+
+
+
