@@ -13,3 +13,18 @@ class IsSiteManager(JWTAuthentication):
             # if siteManager.ManagerUserName == ManagerUserName and siteManager.check_password(ManagerPassword):
             return authenticatedUser, token
         AuthenticationFailed('Invalid Credentials. Please Login')
+
+class IsAdministrator(JWTAuthentication):
+    def authenticate(self, request):
+        authenticatedUser, token = super().authenticate(request)
+        if hasattr(authenticatedUser, 'administrator') or hasattr(authenticatedUser, 'sitemanager'):
+            return authenticatedUser, token
+        AuthenticationFailed('Invalid Credentials. Please Login')
+
+class IsGrantee(JWTAuthentication):
+
+    def authenticate(self, request):
+        authenticatedUser, token = super().authenticate(request)
+        if hasattr(authenticatedUser, 'grantee') or hasattr(authenticatedUser, 'administrator') or hasattr(authenticatedUser, 'sitemanager'):
+            return authenticatedUser, token
+        AuthenticationFailed('Invalid Credentials. Please Login')

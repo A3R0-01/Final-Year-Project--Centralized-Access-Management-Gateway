@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly, IsAu
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.response import Response
 from .serializers import AbstractModelSerializer
-from .authenticationClasses import IsSiteManager
+from .authenticationClasses import IsSiteManager, IsAdministrator, IsGrantee
 # Create your views here.
 
 class AbstractModelViewSet(ModelViewSet):
@@ -27,12 +27,12 @@ class AbstractModelViewSet(ModelViewSet):
         self.perform_create(serializer=serializer)
         return Response(serializer.data, HTTP_201_CREATED)
     
-class AbstractSiteManagerModelViewSet(AbstractModelViewSet):
+
+class AbstractGranteeModelViewSet(AbstractModelViewSet):
     http_method_names = ('patch', 'get', 'post')
     permission_classes = (IsAuthenticated,)
-
     def get_authenticators(self):
-        customAuthenticators = [IsSiteManager()]
+        customAuthenticators = [IsGrantee()]
         return customAuthenticators
 
     def get_object(self):
@@ -50,4 +50,16 @@ class AbstractSiteManagerModelViewSet(AbstractModelViewSet):
         self.perform_create(serializer=serializer)
         return Response(serializer.data, HTTP_201_CREATED)
 
+class AbstractAdministratorModelViewSet(AbstractGranteeModelViewSet):
+    def get_authenticators(self):
+        customAuthenticators = [IsAdministrator()]
+        return customAuthenticators
+
+class AbstractSiteManagerModelViewSet(AbstractAdministratorModelViewSet):
+    http_method_names = ('patch', 'get', 'post', 'delete')
+    permission_classes = (IsAuthenticated,)
+
+    def get_authenticators(self):
+        customAuthenticators = [IsSiteManager()]
+        return customAuthenticators
 

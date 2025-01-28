@@ -52,3 +52,51 @@ class LoginSiteManagerSerializer(TokenObtainPairSerializer):
 
     def is_valid(self, *, raise_exception=False):
         return super().is_valid(raise_exception=raise_exception)
+
+class LoginAdministratorSerializer(TokenObtainPairSerializer):
+    AdministratorPassword = None
+    AdministratorUserName = None
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.AdministratorPassword = kwargs['data']['AdministratorPassword']
+        self.AdministratorUserName = kwargs['data']['AdministratorUserName']
+
+    def validate(self, attrs):
+        data =  super().validate(attrs)
+        refresh = self.get_token(self.user)
+        if hasattr(self.user, 'administrator'):
+            # ManagerPassword, ManagerUserName = attrs['ManagerPassword'], attrs['ManagerUserName']
+            if self.user.administrator.check_password(self.AdministratorPassword) and self.AdministratorUserName == self.user.administrator.AdministratorUserName:
+                data['user'] = SiteManagerSerializer(self.user.administrator).data
+                data['refresh'] = str(refresh)
+                data['access'] = str(refresh.access_token)
+                if api_settings.UPDATE_LAST_LOGIN:
+                    update_last_login(None, self.user)
+                return data
+
+
+        return INVALID_DATA
+
+class LoginGranteeSerializer(TokenObtainPairSerializer):
+    GranteePassword = None
+    GranteeUserName = None
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.GranteePassword = kwargs['data']['GranteePassword']
+        self.GranteeUserName = kwargs['data']['GranteeUserName']
+
+    def validate(self, attrs):
+        data =  super().validate(attrs)
+        refresh = self.get_token(self.user)
+        if hasattr(self.user, 'grantee'):
+            # ManagerPassword, ManagerUserName = attrs['ManagerPassword'], attrs['ManagerUserName']
+            if self.user.grantee.check_password(self.GranteePassword) and self.GranteeUserName == self.user.grantee.GranteeUserName:
+                data['user'] = SiteManagerSerializer(self.user.grantee).data
+                data['refresh'] = str(refresh)
+                data['access'] = str(refresh.access_token)
+                if api_settings.UPDATE_LAST_LOGIN:
+                    update_last_login(None, self.user)
+                return data
+
+
+        return INVALID_DATA

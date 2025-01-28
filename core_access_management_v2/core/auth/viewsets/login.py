@@ -1,4 +1,4 @@
-from core.auth.serializers import LoginCitizenSerializer, LoginSiteManagerSerializer, INVALID_DATA
+from core.auth.serializers import LoginCitizenSerializer, LoginSiteManagerSerializer, LoginAdministratorSerializer, LoginGranteeSerializer, INVALID_DATA
 from rest_framework.viewsets import ViewSet
 from rest_framework.permissions import AllowAny
 from rest_framework.status import HTTP_200_OK
@@ -19,8 +19,8 @@ class LoginCitizenViewSet(ViewSet):
             raise InvalidToken(e.args[0])
         return Response(serializer.validated_data, status=HTTP_200_OK)
 
-class LoginSiteManagerViewSet(ViewSet):
-    serializer_class = LoginSiteManagerSerializer
+class LoginGranteeViewSet(ViewSet):
+    serializer_class = LoginGranteeSerializer
     permission_classes = (AllowAny,)
     http_method_names = ('post',)
 
@@ -34,3 +34,9 @@ class LoginSiteManagerViewSet(ViewSet):
         # if data == INVALID_DATA:
         #     AuthenticationFailed()
         return Response(serializer.validated_data, HTTP_200_OK)
+
+class LoginAdministratorViewSet(LoginGranteeViewSet):
+    serializer_class = LoginAdministratorSerializer
+class LoginSiteManagerViewSet(LoginAdministratorViewSet):
+    serializer_class = LoginSiteManagerSerializer
+    
