@@ -12,7 +12,7 @@ class SiteManagerManager(BaseUserManager, AbstractManager):
         return super().create(**kwargs)
     pass
 
-class SiteManager(AbstractBaseUser, PermissionsMixin, AbstractModel):
+class SiteManager(AbstractBaseUser, AbstractModel):
     ManagerUserName = models.CharField(unique=True, max_length=100)
     Citizen = models.OneToOneField(to='citizen.Citizen', on_delete=models.PROTECT)
     FirstEmail = models.EmailField(unique=True)
