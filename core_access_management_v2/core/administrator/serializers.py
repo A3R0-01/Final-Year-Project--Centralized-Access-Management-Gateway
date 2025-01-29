@@ -1,16 +1,17 @@
-from rest_framework.serializers import CharField
+from rest_framework.serializers import CharField, SlugRelatedField
 from django.contrib.auth.hashers import make_password
 from core.abstract.serializers import AbstractModelSerializer
-from core.citizen.serializers import StaffCitizenSerializer
+from core.citizen.serializers import StaffCitizenSerializer, Citizen
 from .models import Administrator
 
 class AdministratorModelSerializer(AbstractModelSerializer):
+    Citizen = SlugRelatedField(queryset=Citizen.objects.all(), slug_field='PublicId')
     password = CharField(max_length=128, min_length=8, write_only=True, required=True)
 
     class Meta:
         model : Administrator = Administrator
         fields : list[str] = [
-            'id', 'AdministratorUsername', 'Citizen', 'FirstEmail', 'SecondEmail', 'password', 'GranteeLimit',
+            'id', 'AdministratorUserName', 'Citizen', 'FirstEmail', 'SecondEmail', 'password', 'GranteeLimit',
             'Created', 'Updated'
         ]
 
@@ -32,7 +33,7 @@ class SiteManagerAdministratorModelSerializer(AdministratorModelSerializer):
     class Meta:
         model : Administrator = Administrator
         fields : list[str] = [
-            'id', 'AdministratorUsername', 'Citizen', 'FirstEmail', 'SecondEmail', 'GranteeLimit','password',
+            'id', 'AdministratorUserName', 'Citizen', 'FirstEmail', 'SecondEmail', 'GranteeLimit','password',
             'Created', 'Updated'
         ]
         read_only_fields :list[str] = [
