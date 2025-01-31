@@ -1,10 +1,13 @@
-from rest_framework.serializers import CharField
+from rest_framework.serializers import CharField, SlugRelatedField
 from django.contrib.auth.hashers import make_password
 from core.abstract.serializers import AbstractModelSerializer
-from core.citizen.serializers import StaffCitizenSerializer
+from core.citizen.serializers import StaffCitizenSerializer, Citizen
+from core.administrator.models import Administrator
 from .models import Grantee
 
 class GranteeSerializer(AbstractModelSerializer):
+    Citizen = SlugRelatedField(queryset=Citizen.objects.all(), slug_field='PublicId')
+    Administrator = SlugRelatedField(queryset=Administrator.objects.all(), slug_field='PublicId')
     password = CharField(max_length=128, min_length=8, write_only=True, required=True)
 
     def validate_password(self, value: str) -> str:
@@ -12,14 +15,14 @@ class GranteeSerializer(AbstractModelSerializer):
     class Meta:
         model : Grantee = Grantee
         fields : list[str] = [
-             'id', 'AdministratorUsername', 'Citizen', 'FirstEmail', 'SecondEmail','password',
+             'id','GranteeUserName', 'Administrator', 'Citizen', 'FirstEmail', 'SecondEmail','password',
             'Created', 'Updated'
         ]
         write_only_fields : list[str] = [
             'password'
         ]
         read_only_fields : list[str] = [
-            'id', 'Citizen', 'GranteeLimit', 'Created', 'Updated'
+            'id', 'Citizen', 'Created', 'Updated'
         ]
 
     def to_representation(self, instance):
@@ -33,7 +36,7 @@ class AdministratorGranteeSerializer(GranteeSerializer):
     class Meta:
         model : Grantee = Grantee
         fields : list[str] = [
-             'id', 'AdministratorUsername', 'Citizen', 'FirstEmail', 'SecondEmail','password',
+             'id', 'GranteeUserName', 'Administrator', 'Citizen', 'FirstEmail', 'SecondEmail','password',
             'Created', 'Updated'
         ]
 
