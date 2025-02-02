@@ -19,4 +19,12 @@ class GranteeModelsViewSet(AbstractGranteeModelViewSet):
 class AdministratorGranteeViewSet(AbstractAdministratorModelViewSet):
     serializer_class = AdministratorGranteeSerializer
     http_method_names = ('patch', 'get', 'post', 'delete')
+
+    def create(self, request, *args, **kwargs):
+        request.data['Administrator'] = self.request.user.administrator.PublicId.hex
+        return super().create(request, *args, **kwargs)
     pass
+
+class SiteManagerGranteeViewSet(AbstractSiteManagerModelViewSet):
+    serializer_class = AdministratorGranteeSerializer
+    http_method_names = ('patch', 'get', 'post', 'delete')
