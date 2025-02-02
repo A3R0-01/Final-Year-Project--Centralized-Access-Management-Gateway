@@ -1,5 +1,5 @@
 from rest_framework import routers
-from core.citizen.viewsets import CitizenViewSet, SiteManagerCitizenModelViewSet
+from core.citizen.viewsets import CitizenViewSet, SiteManagerCitizenModelViewSet, AdministratorCitizenModelViewSet, GranteeCitizenModelViewSet
 from core.siteManager.viewsets import SiteManagerModelViewSet
 from core.administrator.viewsets import SiteManagerAdministratorModelViewSet, AdministratorModelViewSet
 from core.grantee.viewset import AdministratorGranteeViewSet, GranteeModelsViewSet
@@ -23,14 +23,15 @@ router.register(r'manager/grantee', AdministratorGranteeViewSet, basename='manag
 
 # Administrator
 router.register(r'admin/login', LoginAdministratorViewSet, basename='auth-login-admin')
-router.register(r'admin/citizen', SiteManagerCitizenModelViewSet, basename='admin-citizen')
+router.register(r'admin/citizen', AdministratorCitizenModelViewSet, basename='admin-citizen')
 router.register(r'admin/administrator', AdministratorModelViewSet, basename='admin-administrator')
 router.register(r'admin/grantee', AdministratorGranteeViewSet, basename='admin-grantee')
 
 # Grantee
 router.register(r'grantee/login', LoginGranteeViewSet, basename='auth-login-grantee')
 router.register(r'grantee/grantee', GranteeModelsViewSet, basename='grantee-grantee')
-router.register(r'grantee/citizen', SiteManagerCitizenModelViewSet, basename='grantee-citizen')
+router.register(r'grantee/citizen', GranteeCitizenModelViewSet, basename='grantee-citizen')
+
 
 
 
