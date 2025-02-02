@@ -8,7 +8,7 @@ class AbstractManager(models.Manager):
 
     def get_by_id(self, id: str) -> models.Model:
         try:
-            instance = self.get(id)
+            instance = self.get(PublicId=id)
             return instance
         except (ObjectDoesNotExist, ValueError, TypeError):
             raise NotFound()
