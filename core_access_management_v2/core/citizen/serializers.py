@@ -11,7 +11,7 @@ class CitizenSerializer(serializers.ModelSerializer):
     def validate_password(self, value: str) -> str:
         return make_password(value)
     class Meta:
-        model = Citizen
+        model : Citizen = Citizen
         fields = [
             'id', 'UserName', 'Email', 'FirstName', 'SecondName', 'Surname', 'DOB', 'NationalId','is_active',
             'Updated', 'Created',
@@ -19,6 +19,24 @@ class CitizenSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id', 'is_active', 'Created', 'Updated'
         ]
+
+class GranteeCitizenModelSerializer(CitizenSerializer):
+    class Meta:
+        model : Citizen = Citizen
+        fields = [
+            'id', 'UserName', 'Email', 'FirstName', 'SecondName', 'Surname', 'DOB', 'NationalId','is_active',
+            'Updated', 'Created',
+        ]
+        read_only_fields = [
+            'id', 'UserName', 'Email', 'FirstName', 'SecondName', 'Surname', 'DOB', 'NationalId','is_active',
+            'Updated', 'Created',
+        ]
+
+class AdministratorCitizenModelSerializer(GranteeCitizenModelSerializer):
+    pass
+
+class SiteManagerCitizenModelSerializer(AdministratorCitizenModelSerializer):
+    pass
 
 class StaffCitizenSerializer(AbstractModelSerializer):
 
