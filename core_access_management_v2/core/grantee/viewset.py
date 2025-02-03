@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.exceptions import PermissionDenied
 from core.abstract.viewset import AbstractGranteeModelViewSet, AbstractAdministratorModelViewSet, AbstractSiteManagerModelViewSet
-from .serializers import GranteeSerializer, AdministratorGranteeSerializer
+from .serializers import GranteeSerializer, AdministratorGranteeSerializer, SiteManagerGranteeSerializer
 
 # Create your views here.
 class GranteeModelsViewSet(AbstractGranteeModelViewSet):
@@ -26,5 +26,5 @@ class AdministratorGranteeViewSet(AbstractAdministratorModelViewSet):
     pass
 
 class SiteManagerGranteeViewSet(AbstractSiteManagerModelViewSet):
-    serializer_class = AdministratorGranteeSerializer
+    serializer_class = SiteManagerGranteeSerializer
     http_method_names = ('patch', 'get', 'post', 'delete')
