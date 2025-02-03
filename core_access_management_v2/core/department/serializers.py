@@ -9,10 +9,10 @@ class CitizenDepartmentSerializer(AbstractModelSerializer):
     class Meta:
         model : Department = Department
         fields : list[str] = [
-            'id', 'Title', 'Email', 'Administrator', 'Website','Description', 'Created', 'Updated'
+            'id', 'Title', 'Email', 'Administrator','Telephone', 'Website','Description', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id', 'Title', 'Email', 'Administrator', 'Website','Description', 'Created', 'Updated'
+            'id', 'Title', 'Email', 'Administrator','Telephone', 'Website','Description', 'Created', 'Updated'
         ]
 
 class GranteeDepartmentSerializer(CitizenDepartmentSerializer):
@@ -29,7 +29,7 @@ class SiteManagerDepartmentSerializer(AdministratorDepartmentSerializer):
     class Meta:
         model : Department = Department
         fields : list[str] = [
-            'id', 'Title', 'Email', 'Administrator', 'Website', 'Description', 'Created', 'Updated'
+            'id', 'Title', 'Email', 'Administrator', 'Telephone', 'Website', 'Description', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
             'id','Created', 'Updated'
