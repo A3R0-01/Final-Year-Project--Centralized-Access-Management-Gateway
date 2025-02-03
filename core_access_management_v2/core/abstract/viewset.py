@@ -17,10 +17,16 @@ class AbstractModelViewSet(ModelViewSet):
         obj = self.serializer_class.Meta.model.objects.get_by_id(id)
         self.check_object_permissions(self.request, obj)
         return obj
-    
+
     def get_queryset(self):
         return self.serializer_class.Meta.model.objects.all()
-    
+
+    def secondary_create(self, serializer_class: AbstractModelSerializer, data : dict[str], *args, **kwargs) -> str:
+        serializer : AbstractModelSerializer = serializer_class(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return serializer.data['id']
+
     def create(self, request, *args, **kwargs):
         serializer : AbstractModelSerializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
