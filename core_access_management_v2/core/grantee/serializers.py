@@ -43,3 +43,15 @@ class AdministratorGranteeSerializer(GranteeSerializer):
         read_only_fields : list[str] = [
             'id', 'Created', 'Updated'
         ]
+
+class SiteManagerGranteeSerializer(AdministratorGranteeSerializer):
+    class Meta:
+        model : Grantee = Grantee
+        fields : list[str] = [
+             'id', 'GranteeUserName', 'Administrator', 'Citizen', 'FirstEmail', 'SecondEmail','password',
+            'Created', 'Updated'
+        ]
+
+        read_only_fields : list[str] = [
+            'id', 'Created', 'Updated'
+        ]
