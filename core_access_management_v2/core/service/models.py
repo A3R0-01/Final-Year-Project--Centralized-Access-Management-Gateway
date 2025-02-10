@@ -2,6 +2,13 @@ from django.db import models
 from core.abstract.models import AbstractManager, AbstractModel
 
 # Create your models here.
+class TransportManager(AbstractManager):
+
+    pass
+
+class Transport(AbstractModel):
+    Name = models.CharField(max_length='100', unique=True)
+    
 
 class ServiceManager(AbstractManager):
 
@@ -11,8 +18,9 @@ class Service(AbstractModel):
     Title = models.CharField(max_length=100, unique=True)
     Description = models.TextField()
     Email = models.EmailField()
-    Grantee = models.ForeignKey(to='grantee.Grantee', on_delete=models.PROTECT)
+    Grantee = models.ManyToManyField(to='grantee.Grantee', on_delete=models.PROTECT)
     Association = models.ForeignKey(to='association.Association', on_delete=models.PROTECT)
+    Transport = models.ForeignKey
 
     objects : ServiceManager = ServiceManager()
 
