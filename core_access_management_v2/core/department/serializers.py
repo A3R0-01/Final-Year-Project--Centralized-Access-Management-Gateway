@@ -34,3 +34,14 @@ class SiteManagerDepartmentSerializer(AdministratorDepartmentSerializer):
         read_only_fields : list[str] = [
             'id','Created', 'Updated'
         ]
+
+class AssociationDepartmentSerializer(CitizenDepartmentSerializer):
+
+    class Meta:
+        model:Department = Department
+        fields : list[str] =  [
+            'id', 'Title', 'Email', 'Telephone', 'Website'
+        ]
+        read_only_fields : list[str] = [
+            'id', 'Title', 'Email', 'Telephone', 'Website'
+        ]
