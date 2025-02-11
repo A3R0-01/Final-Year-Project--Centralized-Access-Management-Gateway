@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from rest_framework.exceptions import bad_request
+from django.db.transaction import atomic
+from rest_framework.exceptions import ValidationError
 from core.abstract.viewset import AbstractModelViewSet, AbstractGranteeModelViewSet, AbstractAdministratorModelViewSet, AbstractSiteManagerModelViewSet
 from core.association.serializers import AdministratorAssociationModelSerializer, SiteManagerAssociationModelSerializer
 from core.grantee.serializers import AdministratorGranteeSerializer, SiteManagerGranteeSerializer
@@ -16,16 +17,16 @@ class GranteeServiceViewSet(AbstractGranteeModelViewSet):
 class AdministratorServiceViewSet(AbstractAdministratorModelViewSet):
     http_method_names : tuple[str] = ('get', 'patch', 'post', 'delete')
     serializer_class = AdministratorServiceSerializer
-
+    @atomic
     def create(self, request, *args, **kwargs):
         association = request.data.pop('Association', False)
         grantee = request.data.pop('Grantee', False)
         if not association:
-            bad_request()
+            ValidationError("Association missing")
         elif type(association) == dict:
             association = self.secondary_create(AdministratorAssociationModelSerializer, association)
         if not grantee:
-            bad_request()
+            ValidationError("Grantee is missing")
         elif type(grantee) == dict:
             grantee = self.secondary_create(AdministratorGranteeSerializer, grantee)
         request.data['Association'] = association
@@ -35,16 +36,16 @@ class AdministratorServiceViewSet(AbstractAdministratorModelViewSet):
 class SiteManagerServiceViewSet(AbstractSiteManagerModelViewSet):
     http_method_names : tuple[str] = ('get', 'patch', 'post', 'delete')
     serializer_class = SiteManagerServiceSerializer
-
+    @atomic
     def create(self, request, *args, **kwargs):
         association = request.data.pop('Association', False)
         grantee = request.data.pop('Grantee', False)
         if not association:
-            bad_request()
+            raise ValidationError("Association is missing")
         elif type(association) == dict:
             association = self.secondary_create(SiteManagerAssociationModelSerializer, association)
         if not grantee:
-            bad_request()
+            raise ValidationError("Grantee is missing")
         elif type(grantee) == dict:
             grantee = self.secondary_create(SiteManagerGranteeSerializer, grantee)
         request.data['Association'] = association
