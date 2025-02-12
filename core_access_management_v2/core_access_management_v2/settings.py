@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'core.administrator',
     'core.grantee',
     'core.department',
-    'core.association'
+    'core.association',
+    'core.publicService',
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ( 'rest_framework_simplejwt.authentication.JWTAuthentication',),
