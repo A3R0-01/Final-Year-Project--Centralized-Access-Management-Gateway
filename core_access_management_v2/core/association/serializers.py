@@ -39,7 +39,7 @@ class SiteManagerAssociationModelSerializer(AdministratorAssociationModelSeriali
             'id', 'Created', 'Updated'
         ]
 
-class ServiceAssociationSerializer(AbstractModelSerializer):
+class PublicServiceAssociationSerializer(AbstractModelSerializer):
     Department = SlugRelatedField(queryset=Department.objects.all(), slug_field='PublicId')
 
 

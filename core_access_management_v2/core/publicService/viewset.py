@@ -4,19 +4,19 @@ from rest_framework.exceptions import ValidationError
 from core.abstract.viewset import AbstractModelViewSet, AbstractGranteeModelViewSet, AbstractAdministratorModelViewSet, AbstractSiteManagerModelViewSet
 from core.association.serializers import AdministratorAssociationModelSerializer, SiteManagerAssociationModelSerializer
 from core.grantee.serializers import AdministratorGranteeSerializer, SiteManagerGranteeSerializer
-from .serializers import CitizenServiceSerializer, GranteeServiceSerializer, AdministratorServiceSerializer, SiteManagerServiceSerializer
+from .serializers import CitizenPublicServiceSerializer, GranteePublicServiceSerializer, AdministratorPublicServiceSerializer, SiteManagerPublicServiceSerializer
 # Create your views here.
-class CitizenServiceViewSet(AbstractModelViewSet):
+class CitizenPublicServiceViewSet(AbstractModelViewSet):
     http_method_names : tuple[str] = ('get',)
-    serializer_class = CitizenServiceSerializer
+    serializer_class = CitizenPublicServiceSerializer
 
-class GranteeServiceViewSet(AbstractGranteeModelViewSet):
+class GranteePublicServiceViewSet(AbstractGranteeModelViewSet):
     http_method_names : tuple[str] = ('get',)
-    serializer_class = GranteeServiceSerializer
+    serializer_class = GranteePublicServiceSerializer
 
-class AdministratorServiceViewSet(AbstractAdministratorModelViewSet):
+class AdministratorPublicServiceViewSet(AbstractAdministratorModelViewSet):
     http_method_names : tuple[str] = ('get', 'patch', 'post', 'delete')
-    serializer_class = AdministratorServiceSerializer
+    serializer_class = AdministratorPublicServiceSerializer
     @atomic
     def create(self, request, *args, **kwargs):
         association = request.data.pop('Association', False)
@@ -33,9 +33,9 @@ class AdministratorServiceViewSet(AbstractAdministratorModelViewSet):
         request.data['Grantee'] = grantee
         return super().create(request, *args, **kwargs)
 
-class SiteManagerServiceViewSet(AbstractSiteManagerModelViewSet):
+class SiteManagerPublicServiceViewSet(AbstractSiteManagerModelViewSet):
     http_method_names : tuple[str] = ('get', 'patch', 'post', 'delete')
-    serializer_class = SiteManagerServiceSerializer
+    serializer_class = SiteManagerPublicServiceSerializer
     @atomic
     def create(self, request, *args, **kwargs):
         association = request.data.pop('Association', False)

@@ -90,7 +90,7 @@ class SiteManagerGranteeSerializer(AdministratorGranteeSerializer):
             'id', 'Created', 'Updated'
         ]
 
-class ServiceGranteeSerializer(GranteeSerializer):
+class PublicServiceGranteeSerializer(GranteeSerializer):
 
     class Meta:
         model: Grantee = Grantee

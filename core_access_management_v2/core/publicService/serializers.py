@@ -3,22 +3,22 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.utils import model_meta
 from core.abstract.serializers import AbstractModelSerializer
 from core.association.models import Association
-from core.association.serializers import ServiceAssociationSerializer
+from core.association.serializers import PublicServiceAssociationSerializer
 from core.grantee.models import Grantee
-from core.grantee.serializers import ServiceGranteeSerializer
-from .models import Service
+from core.grantee.serializers import PublicServiceGranteeSerializer
+from .models import PublicService
 
-class CitizenServiceSerializer(AbstractModelSerializer):
+class CitizenPublicServiceSerializer(AbstractModelSerializer):
     Association = SlugRelatedField(queryset=Association.objects.all(), slug_field='PublicId')
     Grantee = SlugRelatedField(queryset=Grantee.objects.all(), slug_field='PublicId')
     
-    def to_representation(self, instance:Service):
+    def to_representation(self, instance:PublicService):
         data = super().to_representation(instance)
-        data['Grantee'] = ServiceGranteeSerializer(instance.Grantee).data
-        data['Association'] = ServiceAssociationSerializer(instance.Association).data
+        data['Grantee'] = PublicServiceGranteeSerializer(instance.Grantee).data
+        data['Association'] = PublicServiceAssociationSerializer(instance.Association).data
         return data
 
-    def update(self, instance : Service, validated_data):
+    def update(self, instance : PublicService, validated_data):
         raise_errors_on_nested_writes('update', self, validated_data)
         info = model_meta.get_field_info(instance)
 
@@ -51,7 +51,7 @@ class CitizenServiceSerializer(AbstractModelSerializer):
         raise ValidationError("Grantee does not belong to the association: %s", granteeError)
 
     class Meta:
-        model : Service = Service
+        model : PublicService = PublicService
         fields : list[str] = [
             'id','Title', 'Email', 'Association', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
         ]
@@ -59,12 +59,12 @@ class CitizenServiceSerializer(AbstractModelSerializer):
             'id','Title', 'Email', 'Association', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
         ]
 
-class GranteeServiceSerializer(CitizenServiceSerializer):
+class GranteePublicServiceSerializer(CitizenPublicServiceSerializer):
     pass
 
-class AdministratorServiceSerializer(GranteeServiceSerializer):
+class AdministratorPublicServiceSerializer(GranteePublicServiceSerializer):
     class Meta:
-        model : Service = Service
+        model : PublicService = PublicService
         fields : list[str] = [
             'id','Title', 'Email', 'Association', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
         ]
@@ -73,6 +73,6 @@ class AdministratorServiceSerializer(GranteeServiceSerializer):
         ]
     pass
 
-class SiteManagerServiceSerializer(AdministratorServiceSerializer):
+class SiteManagerPublicServiceSerializer(AdministratorPublicServiceSerializer):
     pass
 
