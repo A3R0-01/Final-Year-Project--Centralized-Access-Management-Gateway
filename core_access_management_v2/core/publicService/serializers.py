@@ -76,3 +76,13 @@ class AdministratorPublicServiceSerializer(GranteePublicServiceSerializer):
 class SiteManagerPublicServiceSerializer(AdministratorPublicServiceSerializer):
     pass
 
+class RequestPublicServiceSerializer(AbstractModelSerializer):
+
+    class Meta:
+        model : PublicService = PublicService
+        fields : list[str] = [
+            'id','Title', 'URL'
+        ]
+        read_only_fields : list[str] =  [
+            'id','Title', 'URL'
+        ]
