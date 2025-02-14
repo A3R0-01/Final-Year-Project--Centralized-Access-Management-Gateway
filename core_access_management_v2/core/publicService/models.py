@@ -20,6 +20,7 @@ class PublicService(AbstractModel):
     Grantee = models.ManyToManyField(to='grantee.Grantee')
     Association = models.ForeignKey(to='association.Association', on_delete=models.PROTECT)
     URL = models.URLField(unique=True)
+    Visibility = models.BooleanField(default=True)
 
 
     objects : PublicServiceManager = PublicServiceManager()
