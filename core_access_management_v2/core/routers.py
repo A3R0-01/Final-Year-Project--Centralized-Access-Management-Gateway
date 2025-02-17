@@ -7,8 +7,8 @@ from core.auth.viewsets import RegisterViewSet, LoginCitizenViewSet, RefreshView
 from core.department.viewsets import CitizenDepartmentViewSet, GranteeDepartmentViewSet, AdministratorDepartmentViewSet, SiteManagerDepartmentViewSet
 from core.association.viewsets import CitizenAssociationModelViewSet, GranteeAssociationModelViewSet, AdministratorAssociationModelViewSet, SiteManagerAssociationModelViewSet
 from core.publicService.viewset import CitizenPublicServiceViewSet, GranteePublicServiceViewSet, AdministratorPublicServiceViewSet, SiteManagerPublicServiceViewSet
-
-
+from core.request.viewsets import CitizenRequestViewSet, GranteeRequestViewSet, AdministratorRequestViewSet, SiteManagerRequestViewSet
+from core.grant.viewsets import CitizenGrantViewSet, GranteeGrantViewSet, AdministratorGrantViewSet, SiteManagerGrantViewSet
 
 router  = routers.SimpleRouter()
 
@@ -22,6 +22,8 @@ router.register(r'auth/refresh', RefreshViewSet, basename='auth-refresh-citizen'
 router.register(r'department', CitizenDepartmentViewSet, basename='department')
 router.register(r'association', CitizenAssociationModelViewSet, basename='association')
 router.register(r'service', CitizenPublicServiceViewSet, basename='service')
+router.register(r'request', CitizenRequestViewSet, basename='request')
+router.register(r'grant', CitizenGrantViewSet, basename='grant')
 
 
 
@@ -34,6 +36,9 @@ router.register(r'manager/grantee', SiteManagerGranteeViewSet, basename='manager
 router.register(r'manager/department', SiteManagerDepartmentViewSet, basename='manager-department')
 router.register(r'manager/association', SiteManagerAssociationModelViewSet, basename='manager-association')
 router.register(r'manager/service', SiteManagerPublicServiceViewSet, basename='manager-service')
+router.register(r'manager/request', SiteManagerRequestViewSet, basename='manager-request')
+router.register(r'manager/grant', SiteManagerGrantViewSet, basename='manager-grant')
+
 
 
 # Administrator
@@ -44,6 +49,9 @@ router.register(r'admin/grantee', AdministratorGranteeViewSet, basename='admin-g
 router.register(r'admin/department', AdministratorDepartmentViewSet, basename='admin-department')
 router.register(r'admin/association', AdministratorAssociationModelViewSet, basename='admin-association')
 router.register(r'admin/service', AdministratorPublicServiceViewSet, basename='admin-service')
+router.register(r'admin/request', AdministratorRequestViewSet, basename='admin-request')
+router.register(r'admin/grant', AdministratorGrantViewSet, basename='admin-grant')
+
 
 
 # Grantee
@@ -53,6 +61,9 @@ router.register(r'grantee/citizen', GranteeCitizenModelViewSet, basename='grante
 router.register(r'grantee/department', GranteeDepartmentViewSet, basename='grantee-department')
 router.register(r'grantee/association', GranteeAssociationModelViewSet, basename='grantee-association')
 router.register(r'grantee/service', GranteePublicServiceViewSet, basename='grantee-service')
+router.register(r'grantee/request', GranteeRequestViewSet, basename='grantee-request')
+router.register(r'grantee/grant', GranteeGrantViewSet, basename='grantee-grant')
+
 
 
 urlPatterns = [
