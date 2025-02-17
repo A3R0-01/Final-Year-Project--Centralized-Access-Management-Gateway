@@ -14,7 +14,7 @@ class AbstractModelViewSet(ModelViewSet):
 
     def get_object(self):
         id = self.kwargs['pk']
-        obj = self.serializer_class.Meta.model.objects.get_by_id(id)
+        obj = self.get_queryset().get_by_id(id)
         self.check_object_permissions(self.request, obj)
         return obj
 
