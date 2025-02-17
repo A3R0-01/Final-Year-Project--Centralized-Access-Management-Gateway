@@ -100,3 +100,14 @@ class PublicServiceGranteeSerializer(GranteeSerializer):
         read_only_fields : list[str] = [
             'id', 'GranteeUserName'
         ]
+
+class GrantGranteeSerializer(GranteeSerializer):
+
+    class Meta:
+        model: Grantee = Grantee
+        fields : list[str] = [
+            'id', 'GranteeUserName'
+        ]
+        read_only_fields : list[str] = [
+            'id', 'GranteeUserName'
+        ]
