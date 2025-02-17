@@ -15,8 +15,12 @@ class Association(AbstractModel):
 
     objects : AssociationManager = AssociationManager()
 
+    @property
+    def get_administrator(self):
+        return self.Department.Administrator
+
     def __str__(self):
-        return f'{self.Title}, {self.Email}, {self.Administrator.AdministratorUserName}'
+        return f'{self.Title}, {self.Email}, {self.Department.Administrator.AdministratorUserName}'
 
     pass
 
