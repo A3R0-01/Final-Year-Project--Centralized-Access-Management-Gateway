@@ -16,14 +16,18 @@ class CitizenRequestSerializer(AbstractModelSerializer):
         try:
             data['Citizen'] = RequestCitizenSerializer(instance.Citizen).data
             data['PublicService'] = RequestPublicServiceSerializer(instance.PublicService).data
-            return data
+            if hasattr(instance, 'grant'):
+                data['Granted'] = instance.grant.granted
+                return data
+            else:
+                raise Exception()
         except:
             raise APIException('Failed to produce data')
 
     class Meta:
         model : Request = Request
         fields : list[str] = [
-            'id', 'Subject', 'Message', 'Citizen', 'PublicService', 'Grant', 'Created', 'Updated'
+            'id', 'Subject', 'Message', 'Citizen', 'PublicService', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
             'id', 'Grant', 'Created', 'Updated'
@@ -33,7 +37,7 @@ class GranteeRequestSerializer(CitizenRequestSerializer):
     class Meta:
         model : Request = Request
         fields : list[str] = [
-            'id', 'Subject', 'Message', 'Citizen', 'PublicService', 'Grant', 'Created', 'Updated'
+            'id', 'Subject', 'Message', 'Citizen', 'PublicService', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
             'id', 'Subject', 'Message', 'Citizen', 'PublicService', 'Created', 'Updated'
@@ -45,3 +49,14 @@ class AdministratorRequestSerializer(GranteeRequestSerializer):
 class SiteManagerRequestSerializer(AdministratorRequestSerializer):
 
     pass
+
+class GrantRequestSerializer(CitizenRequestSerializer):
+
+    class Meta:
+        model : Request = Request
+        fields : list[str] = [
+            'id', 'Subject', 'Citizen', 'PublicService'
+        ]
+        read_only_fields : list[str] = [
+            'id', 'Subject', 'Citizen', 'PublicService'
+        ]
