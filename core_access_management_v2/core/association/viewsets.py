@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.db.transaction import atomic
+from django.db.models import QuerySet
 from django.db.utils import IntegrityError
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.response import Response
@@ -7,7 +8,7 @@ from rest_framework.exceptions import MethodNotAllowed, bad_request
 from core.department.serializers import SiteManagerDepartmentSerializer
 from core.abstract.viewset import AbstractGranteeModelViewSet, AbstractAdministratorModelViewSet, AbstractSiteManagerModelViewSet, AbstractModelViewSet
 from .serializers import CitizenAssociationModelSerializer, GranteeAssociationModelSerializer, AdministratorAssociationModelSerializer, SiteManagerAssociationModelSerializer
-
+from .models import Association
 # Create your views here.
 class CitizenAssociationModelViewSet(AbstractModelViewSet):
     http_method_names : tuple[str] = ('get',)
@@ -18,9 +19,25 @@ class GranteeAssociationModelViewSet(AbstractGranteeModelViewSet):
     http_method_names = ('get',)
     serializer_class = GranteeAssociationModelSerializer
 
+    def get_queryset(self):
+        if hasattr(self.request.user, 'grantee'):
+            grantee_association : Association = self.request.user.grantee.Association
+            # print(admin_department)
+            return self.serializer_class.Meta.model.objects.filter(PublicId=grantee_association.PublicId.hex)
+        raise MethodNotAllowed
+
 class AdministratorAssociationModelViewSet(AbstractAdministratorModelViewSet):
     http_method_names = ('get', 'patch', 'post')
     serializer_class = AdministratorAssociationModelSerializer
+
+    def get_queryset(self):
+        if hasattr(self.request.user, 'administrator'):
+            if hasattr(self.request.user.administrator, 'department'):
+                admin_department = self.request.user.administrator.department
+                # print(admin_department)
+                # print(self.serializer_class.Meta.model.objects.filter(Department=admin_department))
+                return self.serializer_class.Meta.model.objects.filter(Department=admin_department)
+        raise MethodNotAllowed
 
     @atomic
     def create(self, request, *args, **kwargs):

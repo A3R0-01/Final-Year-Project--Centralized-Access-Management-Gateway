@@ -34,7 +34,7 @@ class AdministratorRequestViewSet(AbstractAdministratorModelViewSet):
             return self.serializer_class.Meta.model.objects.filter(Service__Association__in=associations)
         raise MethodNotAllowed()
 
-class SiteManagerRequestViewSet(AbstractAdministratorModelViewSet):
+class SiteManagerRequestViewSet(AbstractSiteManagerModelViewSet):
     serializer_class = SiteManagerRequestSerializer
     http_method_names = ('get')
 
