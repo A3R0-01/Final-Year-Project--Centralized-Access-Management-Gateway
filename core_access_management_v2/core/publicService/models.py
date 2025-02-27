@@ -1,14 +1,24 @@
 from django.db import models
 from rest_framework.exceptions import ValidationError
 from core.abstract.models import AbstractManager, AbstractModel
-from core.grantee.models import Grantee
+# from core.grantee.models import Grantee
+from pprint import pprint
 
 # Create your models here.
 class PublicServiceManager(AbstractManager):
 
     def create(self, **kwargs):
-        if kwargs['Association'] == kwargs['Grantee'].Association: return super().create(**kwargs)
-        raise ValidationError("Association and Grantee Do not match")
+        pprint(kwargs)
+        for grantee in kwargs['Grantee'] :
+            if kwargs['Association'] != grantee.Association: raise ValidationError("Association and Grantee Do not match")
+        grantee = kwargs.pop('Grantee', [])
+        model : PublicService = self.model(**kwargs)
+        pprint(grantee)
+        # model.Grantee.set(grantee)
+        model.save(using=self._db)
+        model.Grantee.set(grantee)
+        model.save(using=self._db)
+        return model
 
     pass
 
@@ -25,6 +35,15 @@ class PublicService(AbstractModel):
 
     objects : PublicServiceManager = PublicServiceManager()
 
+    @property
+    def get_grantee(self):
+        text = ''
+        pprint(self.Grantee)
+        for grantee in self.Grantee.all():
+            text += f'\n\t\t {grantee.GranteeUserName}'
+        pprint(text).__str__
+        return text
+
     def __str__(self):
-        return f'PublicService: {self.Title}, Association({self.Association.Title}), Email({self.Email}, Grantee({self.Grantee.GranteeUserName}))'
+        return f'PublicService: \n\t{self.Title}, \n\tAssociation({self.Association}), \n\tEmail({self.Email}, \n\tGrantee({self.get_grantee}))'
 

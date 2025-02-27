@@ -14,6 +14,7 @@ import (
 
 var rudiUrl = "http://127.0.0.1:8002"
 var rudiUrl2 = "http://127.0.0.1:8001"
+var central_access_managementUrl = "http://127.0.0.1:8000/api"
 
 type Server struct {
 	id        string
@@ -30,7 +31,11 @@ func (srv *Server) FetchEndpoints() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	endpoints := []*types.Endpoint{endPoint1, endPoint2}
+	endPoint3, err := NewEndpoint("central_access_management", "central_access_management", "", central_access_managementUrl, false, false, []string{"get", "patch"})
+	if err != nil {
+		log.Fatal(err)
+	}
+	endpoints := []*types.Endpoint{endPoint1, endPoint2, endPoint3}
 	if err := verify.VerifyMachineNames(endpoints); err != nil {
 		log.Fatal(err)
 	}
@@ -57,6 +62,7 @@ func (srv *Server) CreateProxies() {
 func (srv *Server) HandleServe(w http.ResponseWriter, r *http.Request) {
 	serviceName := srv.GetServiceName(r.URL.Path)
 	path := r.URL.Path
+	fmt.Println(path)
 	endPoint, exists := srv.EndPoints[serviceName]
 	if !exists {
 		data := map[string]string{"message": "Service Not Found"}
@@ -81,6 +87,7 @@ func (srv *Server) HandleServe(w http.ResponseWriter, r *http.Request) {
 
 	}
 	r.URL.Path = newString
+	fmt.Println(r.URL.Path)
 	proxy, exists := srv.Proxies[serviceName]
 	if !exists {
 		data := map[string]string{"message": "Service Not Found"}

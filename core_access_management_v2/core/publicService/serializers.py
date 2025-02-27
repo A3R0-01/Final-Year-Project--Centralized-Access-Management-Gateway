@@ -7,15 +7,17 @@ from core.association.serializers import PublicServiceAssociationSerializer
 from core.grantee.models import Grantee
 from core.grantee.serializers import PublicServiceGranteeSerializer
 from .models import PublicService
+from pprint import pprint
 
 class CitizenPublicServiceSerializer(AbstractModelSerializer):
     Association = SlugRelatedField(queryset=Association.objects.all(), slug_field='PublicId')
-    Grantee = SlugRelatedField(queryset=Grantee.objects.all(), slug_field='PublicId')
+    Grantee = SlugRelatedField(queryset=Grantee.objects.all(), slug_field='PublicId', many=True)
     
     def to_representation(self, instance:PublicService):
         data = super().to_representation(instance)
-        data['Grantee'] = PublicServiceGranteeSerializer(instance.Grantee).data
+        data['Grantee'] = [ PublicServiceGranteeSerializer(grantee).data for grantee in instance.Grantee.all()]
         data['Association'] = PublicServiceAssociationSerializer(instance.Association).data
+        pprint(data)
         return data
 
     def update(self, instance : PublicService, validated_data):
@@ -50,6 +52,8 @@ class CitizenPublicServiceSerializer(AbstractModelSerializer):
             return instance
         raise ValidationError("Grantee does not belong to the association: %s", granteeError)
 
+    def create(self, validated_data):
+        return self.Meta.model.objects.create(**validated_data)
     class Meta:
         model : PublicService = PublicService
         fields : list[str] = [

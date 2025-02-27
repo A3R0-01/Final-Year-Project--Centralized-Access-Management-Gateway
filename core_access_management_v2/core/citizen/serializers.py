@@ -43,10 +43,10 @@ class StaffCitizenSerializer(AbstractModelSerializer):
     class Meta:
         model : Citizen = Citizen
         fields : list[str] = [
-            'id', 'UserName', 'NationalId', 'Updated', 'Created'
+            'id', 'UserName', 'NationalId'
         ]
         read_only_fields : list[str] = [
-            'id', 'UserName', 'NationalId', 'Updated', 'Created'
+            'id', 'UserName', 'NationalId'
         ]
 
 class RequestCitizenSerializer(AbstractModelSerializer):

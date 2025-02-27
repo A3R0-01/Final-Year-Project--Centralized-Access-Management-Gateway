@@ -90,7 +90,7 @@ class SiteManagerGranteeSerializer(AdministratorGranteeSerializer):
             'id', 'Created', 'Updated'
         ]
 
-class PublicServiceGranteeSerializer(GranteeSerializer):
+class PublicServiceGranteeSerializer(AbstractModelSerializer):
 
     class Meta:
         model: Grantee = Grantee
@@ -101,7 +101,7 @@ class PublicServiceGranteeSerializer(GranteeSerializer):
             'id', 'GranteeUserName'
         ]
 
-class GrantGranteeSerializer(GranteeSerializer):
+class GrantGranteeSerializer(AbstractModelSerializer):
 
     class Meta:
         model: Grantee = Grantee
