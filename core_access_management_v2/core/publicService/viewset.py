@@ -22,11 +22,11 @@ class AdministratorPublicServiceViewSet(AbstractAdministratorModelViewSet):
         association = request.data.pop('Association', False)
         grantee = request.data.pop('Grantee', False)
         if not association:
-            ValidationError("Association missing")
+            raise ValidationError("Association missing")
         elif type(association) == dict:
             association = self.secondary_create(AdministratorAssociationModelSerializer, association)
         if not grantee:
-            ValidationError("Grantee is missing")
+            raise ValidationError("Grantee is missing")
         elif type(grantee) == dict:
             grantee = self.secondary_create(AdministratorGranteeSerializer, grantee)
         request.data['Association'] = association
