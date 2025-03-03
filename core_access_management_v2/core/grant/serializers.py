@@ -28,7 +28,7 @@ class CitizenGrantSerializer(AbstractModelSerializer):
         ]
     
 class GranteeGrantSerializer(CitizenGrantSerializer):
-    Grantee = SlugRelatedField(queryset=Grantee.objects.all(), slug_field="PublicId", null=true)
+    Grantee = SlugRelatedField(queryset=Grantee.objects.all(), slug_field="PublicId")
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
