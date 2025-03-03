@@ -31,7 +31,7 @@ class Request(AbstractModel):
 
     def __str__(self):
         if hasattr(self, 'grant'):
-            return f'Request:  {self.Citizen.Email}, {self.PublicService.Title}, {self.Message[:20]}, Grant:: {self.Grant.granted}'
+            return f'Request:  {self.Citizen.Email}, {self.PublicService.Title}, {self.Message[:20]}, Grant:: {self.grant.granted}'
         else:
             return f'Request:  {self.Citizen.Email}, {self.PublicService.Title}, {self.Message[:20]}, Grant:: N/A'
 

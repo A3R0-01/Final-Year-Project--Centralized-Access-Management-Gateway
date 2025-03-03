@@ -54,3 +54,17 @@ class PublicServiceAssociationSerializer(AbstractModelSerializer):
         read_only_fields : list[str] = [
             'id','Title','Email', 'Department','Website'
         ]
+
+class GranteeAssociationSerializer(AbstractModelSerializer):
+    Department = SlugRelatedField(queryset=Department.objects.all(), slug_field='PublicId')
+
+    class Meta:
+        model : Association = Association
+        fields : list[str] = ['id','Title','Email','Department', 'Website']
+        read_only_fields : list[str] = [
+            'id','Title','Email', 'Department','Website'
+        ]
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['Department'] = instance.Department.Title
+        return data

@@ -7,6 +7,7 @@ from core.abstract.serializers import AbstractModelSerializer
 from core.citizen.serializers import StaffCitizenSerializer, Citizen
 from core.administrator.models import Administrator
 from core.association.models import Association
+from core.association.serializers import GranteeAssociationSerializer
 from .models import Grantee
 
 class GranteeSerializer(AbstractModelSerializer):
@@ -62,6 +63,7 @@ class GranteeSerializer(AbstractModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['Citizen'] = StaffCitizenSerializer(instance.Citizen).data
+        data['Association'] = GranteeAssociationSerializer(instance.Association).data
         return data
 
 class AdministratorGranteeSerializer(GranteeSerializer):

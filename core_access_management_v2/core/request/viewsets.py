@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.db.transaction import atomic
 from rest_framework.exceptions import MethodNotAllowed
 from core.abstract.viewset import AbstractModelViewSet, AbstractGranteeModelViewSet, AbstractAdministratorModelViewSet, AbstractSiteManagerModelViewSet
 from core.department.models import Department
@@ -12,6 +13,10 @@ class CitizenRequestViewSet(AbstractModelViewSet):
 
     def get_queryset(self):
         return self.serializer_class.Meta.model.objects.filter(Citizen=self.request.user)
+    @atomic
+    def create(self, request, *args, **kwargs):
+        request.data['Citizen'] = self.request.user.PublicId.hex
+        return super().create(request, *args, **kwargs)
 
 class GranteeRequestViewSet(AbstractGranteeModelViewSet):
     serializer_class = GranteeRequestSerializer
@@ -19,7 +24,7 @@ class GranteeRequestViewSet(AbstractGranteeModelViewSet):
 
     def get_queryset(self):
         if hasattr(self.request.user, 'grantee'):
-            return self.serializer_class.Meta.model.objects.filter(Association=self.request.user.grantee.Association)
+            return self.serializer_class.Meta.model.objects.filter(PublicService__Association=self.request.user.grantee.Association)
         else:
             raise MethodNotAllowed()
 
@@ -31,7 +36,7 @@ class AdministratorRequestViewSet(AbstractAdministratorModelViewSet):
         if hasattr(self.request.user, 'administrator'):
             department = Department.objects.get(Administrator=self.request.user.administrator)
             associations = Association.objects.filter(Department=department)
-            return self.serializer_class.Meta.model.objects.filter(Service__Association__in=associations)
+            return self.serializer_class.Meta.model.objects.filter(PublicService__Association__in=associations)
         raise MethodNotAllowed()
 
 class SiteManagerRequestViewSet(AbstractSiteManagerModelViewSet):

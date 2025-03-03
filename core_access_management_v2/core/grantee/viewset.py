@@ -14,7 +14,7 @@ class GranteeModelsViewSet(AbstractGranteeModelViewSet):
         return obj
     
     def get_queryset(self):
-        PermissionDenied('Grantees Are Not Allowed To View Other Profiles')
+        return self.serializer_class.Meta.model.objects.filter(PublicId=self.request.user.grantee.PublicId)
 
 class AdministratorGranteeViewSet(AbstractAdministratorModelViewSet):
     serializer_class = AdministratorGranteeSerializer

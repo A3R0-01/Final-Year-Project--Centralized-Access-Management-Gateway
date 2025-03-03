@@ -30,7 +30,7 @@ class CitizenRequestSerializer(AbstractModelSerializer):
             'id', 'Subject', 'Message', 'Citizen', 'PublicService', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id', 'Grant', 'Created', 'Updated'
+            'id', 'Created', 'Updated'
         ]
 
 class GranteeRequestSerializer(CitizenRequestSerializer):

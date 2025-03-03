@@ -1,4 +1,5 @@
 from rest_framework.serializers import SlugRelatedField, SerializerMethodField
+from types import NoneType
 from core.abstract.serializers import AbstractModelSerializer
 from core.request.models import Request
 from core.request.serializers import GrantRequestSerializer
@@ -31,7 +32,12 @@ class GranteeGrantSerializer(CitizenGrantSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['Grantee'] = GrantGranteeSerializer(instance.Request).data
+        print(data)
+        answer = bool(instance.Grantee)
+        print(answer)
+        if bool(instance.Grantee):
+            data['Grantee'] = GrantGranteeSerializer(instance.Grantee).data
+        print(data)
         return data
 
     class Meta:
