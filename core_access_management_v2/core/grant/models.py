@@ -32,4 +32,8 @@ class Grant(AbstractModel):
         return True
 
     def __str__(self):
-        return f'Grant: {self.Request.PublicId}, GranteeUserName-{self.Grantee.GranteeUserName}, Decline:: {self.Decline}, Granted:: {self.granted}'
+        if self.Grantee:
+            grantee = self.Grantee.GranteeUserName
+        else:
+            grantee = "N/A"
+        return f'Grant: {self.Request.PublicId}, GranteeUserName-{grantee}, Decline:: {self.Decline}, Granted:: {self.granted}'

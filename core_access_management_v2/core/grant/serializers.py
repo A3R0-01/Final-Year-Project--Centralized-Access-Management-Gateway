@@ -28,13 +28,13 @@ class CitizenGrantSerializer(AbstractModelSerializer):
         ]
     
 class GranteeGrantSerializer(CitizenGrantSerializer):
-    Grantee = SlugRelatedField(queryset=Grantee.objects.all(), slug_field="PublicId")
+    Grantee = SlugRelatedField(queryset=Grantee.objects.all(), slug_field="PublicId", null=true)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         print(data)
         answer = bool(instance.Grantee)
-        print(answer)
+        print(instance)
         if bool(instance.Grantee):
             data['Grantee'] = GrantGranteeSerializer(instance.Grantee).data
         print(data)
@@ -43,7 +43,7 @@ class GranteeGrantSerializer(CitizenGrantSerializer):
     class Meta:
         model : Grant = Grant
         fields : list[str] = [
-            'id', 'Request', 'Grantee', 'Decline', 'StartDate', 'EndDate', 'Message', 'Created', 'Updated'
+            'id', 'Request', 'Grantee', 'Decline', 'Granted', 'StartDate', 'EndDate', 'Message', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
             'id', 'Request', 'Created', 'Updated'
@@ -54,10 +54,10 @@ class AdministratorGrantSerializer(GranteeGrantSerializer):
     class Meta:
         model : Grant = Grant
         fields : list[str] = [
-            'id', 'Request', 'Grantee', 'Decline', 'StartDate', 'EndDate', 'Message', 'Created', 'Updated'
+            'id', 'Request', 'Grantee', 'Decline', 'Granted', 'StartDate', 'EndDate', 'Message', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id', 'Request', 'Grantee', 'Decline', 'StartDate', 'EndDate', 'Message', 'Created', 'Updated'
+            'id', 'Request', 'Grantee', 'Decline', 'Granted', 'StartDate', 'EndDate', 'Message', 'Created', 'Updated'
         ]
 
 class SiteManagerGrantSerializer(GranteeGrantSerializer):
@@ -65,8 +65,8 @@ class SiteManagerGrantSerializer(GranteeGrantSerializer):
     class Meta:
         model : Grant = Grant
         fields : list[str] = [
-            'id', 'Request', 'Grantee', 'Decline', 'StartDate', 'EndDate', 'Message', 'Created', 'Updated'
+            'id', 'Request', 'Grantee', 'Decline', 'Granted', 'StartDate', 'EndDate', 'Message', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id', 'Request', 'Grantee', 'Decline', 'StartDate', 'EndDate', 'Message', 'Created', 'Updated'
+            'id', 'Request', 'Grantee', 'Decline', 'Granted', 'StartDate', 'EndDate', 'Message', 'Created', 'Updated'
         ]

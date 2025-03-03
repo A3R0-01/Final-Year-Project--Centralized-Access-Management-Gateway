@@ -18,7 +18,9 @@ class GranteeGrantViewSet(AbstractGranteeModelViewSet):
     def get_queryset(self):
         if hasattr(self.request.user, 'grantee'):
             request = Request.objects.filter(PublicService__Association=self.request.user.grantee.Association)
-            return Grant.objects.filter(Request__in=request)
+            print(request)
+            print(Grant.objects.filter(Request__in=request))
+            return self.serializer_class.Meta.model.objects.filter(Request__in=request)
         else:
             raise MethodNotAllowed()
 
