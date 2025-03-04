@@ -3,4 +3,5 @@ from django.apps import AppConfig
 
 class ManagerlogConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'managerLog'
+    name = 'core.systemLog.managerLog'
+    label = 'managerLog'
