@@ -17,6 +17,7 @@ class CitizenGrantSerializer(AbstractModelSerializer):
     def to_representation(self, instance : Grant):
         data = super().to_representation(instance)
         data['Request'] = GrantRequestSerializer(instance.Request).data
+        return data
     class Meta:
         model : Grant = Grant
         fields : list[str] = [
@@ -32,12 +33,7 @@ class GranteeGrantSerializer(CitizenGrantSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        print(data)
-        answer = bool(instance.Grantee)
-        print(instance)
-        if bool(instance.Grantee):
-            data['Grantee'] = GrantGranteeSerializer(instance.Grantee).data
-        print(data)
+        data['Grantee'] = GrantGranteeSerializer(instance.Grantee).data
         return data
 
     class Meta:
