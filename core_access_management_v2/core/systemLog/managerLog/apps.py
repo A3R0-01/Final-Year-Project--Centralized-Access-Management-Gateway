@@ -1,7 +1,6 @@
 from django.apps import AppConfig
 
 
-class SystemlogConfig(AppConfig):
+class ManagerlogConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'core.systemLog'
-    label = 'csystemLog'
+    name = 'managerLog'
