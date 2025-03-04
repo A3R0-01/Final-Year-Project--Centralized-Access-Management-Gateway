@@ -1,5 +1,5 @@
 from rest_framework.serializers import SlugRelatedField, SerializerMethodField
-from types import NoneType
+from pprint import pprint
 from core.abstract.serializers import AbstractModelSerializer
 from core.request.models import Request
 from core.request.serializers import GrantRequestSerializer
@@ -12,7 +12,7 @@ class CitizenGrantSerializer(AbstractModelSerializer):
     Granted = SerializerMethodField()
 
     def get_Granted(self, grant:Grant):
-        return Grant.granted
+        return grant.granted
 
     def to_representation(self, instance : Grant):
         data = super().to_representation(instance)
@@ -34,6 +34,7 @@ class GranteeGrantSerializer(CitizenGrantSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['Grantee'] = GrantGranteeSerializer(instance.Grantee).data
+        pprint(data)
         return data
 
     class Meta:

@@ -50,7 +50,15 @@ class SiteManagerRequestSerializer(AdministratorRequestSerializer):
 
     pass
 
-class GrantRequestSerializer(CitizenRequestSerializer):
+class GrantRequestSerializer(AbstractModelSerializer):
+    Citizen = SlugRelatedField(queryset=Citizen.objects.all(), slug_field='PublicId')
+    PublicService = SlugRelatedField(queryset=PublicService.objects.all(), slug_field='PublicId')
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["Citizen"] = instance.Citizen.UserName
+        data['PublicService'] = instance.PublicService.Title
+        return data
 
     class Meta:
         model : Request = Request
