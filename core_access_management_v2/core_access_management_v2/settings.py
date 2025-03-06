@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework_simplejwt',
     'rest_framework',
+    'django_crontab',
     'core',
     'core.citizen',
     'core.auth',
@@ -141,3 +142,7 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Topic for the Kafka system logs
+
+SYSTEM_LOGS_QUEUE_TOPIC = 'SYSTEM_LOGS_$3RL50N_T0P1C'
