@@ -6,5 +6,7 @@ def NewKafkaProducer(topic: str, group_id : str, auto_offset_reset : str = 'earl
         group_id=group_id,
         bootstrap_servers=['localhost:9092'],
         auto_offset_reset=auto_offset_reset,
-        enable_auto_commit=True
+        enable_auto_commit=enable_auto_commit
     )
+
+    return consumer
