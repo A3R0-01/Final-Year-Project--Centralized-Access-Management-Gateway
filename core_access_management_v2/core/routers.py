@@ -9,6 +9,7 @@ from core.association.viewsets import CitizenAssociationModelViewSet, GranteeAss
 from core.publicService.viewset import CitizenPublicServiceViewSet, GranteePublicServiceViewSet, AdministratorPublicServiceViewSet, SiteManagerPublicServiceViewSet
 from core.request.viewsets import CitizenRequestViewSet, GranteeRequestViewSet, AdministratorRequestViewSet, SiteManagerRequestViewSet
 from core.grant.viewsets import CitizenGrantViewSet, GranteeGrantViewSet, AdministratorGrantViewSet, SiteManagerGrantViewSet
+from core.systemLog.viewsets import GranteeCitizenLogViewSet, AdministratorCitizenLogViewSet, AdministratorGranteeLogViewSet, SiteManagerCitizenLogViewSet, SiteManagerGranteeLogViewSet, SiteManagerAdministratorLogViewSet, SiteManagerManagerLogViewSet
 
 router  = routers.SimpleRouter()
 
@@ -38,6 +39,10 @@ router.register(r'manager/association', SiteManagerAssociationModelViewSet, base
 router.register(r'manager/service', SiteManagerPublicServiceViewSet, basename='manager-service')
 router.register(r'manager/request', SiteManagerRequestViewSet, basename='manager-request')
 router.register(r'manager/grant', SiteManagerGrantViewSet, basename='manager-grant')
+router.register(r'manager/log/citizen', SiteManagerCitizenLogViewSet, basename='manager-log-citizen')
+router.register(r'manager/log/grantee', SiteManagerGranteeLogViewSet, basename='manager-log-grantee')
+router.register(r'manager/log/administrator', SiteManagerAdministratorLogViewSet, basename='manager-log-administrator')
+router.register(r'manager/log/manager', SiteManagerManagerLogViewSet, basename='manager-log-manager')
 
 
 
@@ -51,6 +56,8 @@ router.register(r'admin/association', AdministratorAssociationModelViewSet, base
 router.register(r'admin/service', AdministratorPublicServiceViewSet, basename='admin-service')
 router.register(r'admin/request', AdministratorRequestViewSet, basename='admin-request')
 router.register(r'admin/grant', AdministratorGrantViewSet, basename='admin-grant')
+router.register(r'admin/log/citizen', AdministratorCitizenLogViewSet, basename='admin-log-citizen')
+router.register(r'admin/log/grantee', AdministratorGranteeLogViewSet, basename='admin-log-grantee')
 
 
 
@@ -63,6 +70,7 @@ router.register(r'grantee/association', GranteeAssociationModelViewSet, basename
 router.register(r'grantee/service', GranteePublicServiceViewSet, basename='grantee-service')
 router.register(r'grantee/request', GranteeRequestViewSet, basename='grantee-request')
 router.register(r'grantee/grant', GranteeGrantViewSet, basename='grantee-grant')
+router.register(r'grantee/log', GranteeCitizenLogViewSet, basename='grantee-log')
 
 
 
