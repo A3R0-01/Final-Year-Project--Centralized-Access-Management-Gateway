@@ -1,7 +1,10 @@
-from core.abstract.viewset import AbstractAdministratorModelViewSet, AbstractSiteManagerModelViewSet
+from core.abstract.viewset import AbstractAdministratorModelViewSet, AbstractSiteManagerModelViewSet, AbstractGranteeModelViewSet
 
-class AbstractAdministratorLogViewset(AbstractAdministratorModelViewSet):
+class AdministratorLogViewSet(AbstractAdministratorModelViewSet):
     http_method_names = ('get')
 
-class AbstractSiteManagerLogViewset(AbstractSiteManagerModelViewSet):
+class SiteManagerLogViewSet(AbstractSiteManagerModelViewSet):
+    http_method_names = ('get')
+
+class GranteeLogViewSet(AbstractGranteeModelViewSet):
     http_method_names = ('get')
