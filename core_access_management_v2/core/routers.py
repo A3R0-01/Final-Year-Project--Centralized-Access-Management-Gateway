@@ -10,6 +10,10 @@ from core.publicService.viewset import CitizenPublicServiceViewSet, GranteePubli
 from core.request.viewsets import CitizenRequestViewSet, GranteeRequestViewSet, AdministratorRequestViewSet, SiteManagerRequestViewSet
 from core.grant.viewsets import CitizenGrantViewSet, GranteeGrantViewSet, AdministratorGrantViewSet, SiteManagerGrantViewSet
 from core.systemLog.viewsets import GranteeCitizenLogViewSet, AdministratorCitizenLogViewSet, AdministratorGranteeLogViewSet, SiteManagerCitizenLogViewSet, SiteManagerGranteeLogViewSet, SiteManagerAdministratorLogViewSet, SiteManagerManagerLogViewSet
+from core.servicePermissions.viewsets import (
+    SiteManagerAssociationPermissionViewSet, SiteManagerPublicServicePermissionViewSet, SiteManagerDepartmentPermissionViewSet,
+    AdministratorAssociationPermissionViewSet, AdministratorPublicServicePermissionViewSet, AdministratorDepartmentPermissionViewSet
+)
 
 router  = routers.SimpleRouter()
 
@@ -43,6 +47,9 @@ router.register(r'manager/log/citizen', SiteManagerCitizenLogViewSet, basename='
 router.register(r'manager/log/grantee', SiteManagerGranteeLogViewSet, basename='manager-log-grantee')
 router.register(r'manager/log/administrator', SiteManagerAdministratorLogViewSet, basename='manager-log-administrator')
 router.register(r'manager/log/manager', SiteManagerManagerLogViewSet, basename='manager-log-manager')
+router.register(r'manager/permission/department', SiteManagerDepartmentPermissionViewSet, basename='manager-permission-department')
+router.register(r'manager/permission/association', SiteManagerAssociationPermissionViewSet, basename='manager-permission-association')
+router.register(r'manager/permission/service', SiteManagerPublicServicePermissionViewSet, basename='manager-permission-service')
 
 
 
@@ -58,6 +65,9 @@ router.register(r'admin/request', AdministratorRequestViewSet, basename='admin-r
 router.register(r'admin/grant', AdministratorGrantViewSet, basename='admin-grant')
 router.register(r'admin/log/citizen', AdministratorCitizenLogViewSet, basename='admin-log-citizen')
 router.register(r'admin/log/grantee', AdministratorGranteeLogViewSet, basename='admin-log-grantee')
+router.register(r'admin/permission/department', AdministratorDepartmentPermissionViewSet, basename='admin-permission-department')
+router.register(r'admin/permission/association', AdministratorAssociationPermissionViewSet, basename='admin-permission-association')
+router.register(r'admin/permission/service', AdministratorPublicServicePermissionViewSet, basename='admin-permission-service')
 
 
 
