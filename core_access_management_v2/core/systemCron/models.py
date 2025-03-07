@@ -13,6 +13,7 @@ class SystemCronManager(AbstractManager):
 
 class SystemCron(AbstractModel):
     CronName = models.CharField(choices=cron_choices, default=systemLog)
+    Message = models.CharField(null=True)
     FinishedAt = models.DateTimeField()
     Success = models.BooleanField(default=False)
     Failure = models.BooleanField(default=False)
@@ -24,5 +25,5 @@ class SystemCron(AbstractModel):
         self.save()
         return str(self)
     def __str__(self):
-        return f'Cron:: \n\t{self.CronName}, \n\tStarted: {self.Created}, \n\tFinished:{self.FinishedAt}, \n\tSuccess: {self.Success}, \n\tFailure: {self.Failure}'
+        return f'Cron:: \n\t{self.CronName}, \n\tMessage: {self.Message}, \n\tStarted: {self.Created}, \n\tFinished:{self.FinishedAt}, \n\tSuccess: {self.Success}, \n\tFailure: {self.Failure}'
 

@@ -5,8 +5,8 @@ class SystemCronSerializer(AbstractModelSerializer):
     class Meta:
         model : SystemCron = SystemCron
         fields : list[str] = [
-            'id', 'CronName', 'Created', 'FinishedAt', 'Success', 'Failure', 'Updated'
+            'id', 'CronName', 'Message', 'Created', 'FinishedAt', 'Success', 'Failure', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id', 'CronName', 'Created', 'FinishedAt', 'Success', 'Failure', 'Updated'
+            'id', 'CronName', 'Message', 'Created', 'FinishedAt', 'Success', 'Failure', 'Updated'
         ]
