@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.db.transaction import atomic
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, MethodNotAllowed
+from core.association.models import Association
 from core.abstract.viewset import AbstractModelViewSet, AbstractGranteeModelViewSet, AbstractAdministratorModelViewSet, AbstractSiteManagerModelViewSet
 from core.association.serializers import AdministratorAssociationModelSerializer, SiteManagerAssociationModelSerializer
 from core.grantee.serializers import AdministratorGranteeSerializer, SiteManagerGranteeSerializer
@@ -10,13 +11,26 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
     http_method_names : tuple[str] = ('get',)
     serializer_class = CitizenPublicServiceSerializer
 
+    def get_queryset(self):
+        return super().get_queryset()
+
 class GranteePublicServiceViewSet(AbstractGranteeModelViewSet):
     http_method_names : tuple[str] = ('get',)
     serializer_class = GranteePublicServiceSerializer
 
+    def get_queryset(self):
+        return self.serializer_class.Meta.model.objects.filter(Association=self.request.user.grantee.Association)
+
 class AdministratorPublicServiceViewSet(AbstractAdministratorModelViewSet):
     http_method_names : tuple[str] = ('get', 'patch', 'post', 'delete')
     serializer_class = AdministratorPublicServiceSerializer
+
+    def get_queryset(self):
+        if hasattr(self.request.user.admin, 'department'):
+            department = self.request.user.administrator.department
+            associations = Association.objects.filter(Department=department)
+            return self.serializer_class.Meta.model.objects.filter(Association__in=associations)
+        raise MethodNotAllowed('This Information is forbidden')
     @atomic
     def create(self, request, *args, **kwargs):
         association = request.data.pop('Association', False)
