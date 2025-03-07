@@ -45,3 +45,15 @@ class AssociationDepartmentSerializer(CitizenDepartmentSerializer):
         read_only_fields : list[str] = [
             'id', 'Title', 'Email', 'Telephone', 'Website'
         ]
+
+class PermissionDepartmentSerializer(CitizenDepartmentSerializer):
+
+    class Meta:
+        model:Department = Department
+        fields : list[str] =  [
+            'id', 'Title', 'Email', 'Telephone', 'Website'
+        ]
+        read_only_fields : list[str] = [
+            'id', 'Title', 'Email', 'Telephone', 'Website'
+        ]
+

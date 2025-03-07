@@ -90,3 +90,14 @@ class RequestPublicServiceSerializer(AbstractModelSerializer):
         read_only_fields : list[str] =  [
             'id','Title', 'URL'
         ]
+
+class PermissionPublicServiceSerializer(AbstractModelSerializer):
+
+    class Meta:
+        model : PublicService = PublicService
+        fields : list[str] = [
+            'id','Title', 'URL'
+        ]
+        read_only_fields : list[str] =  [
+            'id','Title', 'URL'
+        ]

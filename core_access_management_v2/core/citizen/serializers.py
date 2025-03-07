@@ -58,3 +58,12 @@ class RequestCitizenSerializer(AbstractModelSerializer):
         read_only_fields : list[str] = [
             'id', 'UserName','Email', 'FirstName', 'SecondName',
         ]
+class PermissionCitizenSerializer(AbstractModelSerializer):
+    class Meta:
+        model : Citizen = Citizen
+        fields : list[str] = [
+            'id', 'UserName','Email', 'FirstName', 'SecondName',
+        ]
+        read_only_fields : list[str] = [
+            'id', 'UserName','Email', 'FirstName', 'SecondName',
+        ]
