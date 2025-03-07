@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import json
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -145,4 +146,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Topic for the Kafka system logs
 
-SYSTEM_LOGS_QUEUE_TOPIC = 'SYSTEM_LOGS_$3RL50N_T0P1C'
+SYSTEM_LOG_KAFKA_SETTINGS = {
+    "topic" : "systemLog",
+    "group_id": "systemLog",
+    "auto_offset_reset": 'earliest',
+    'value_deserializer': lambda v : json.loads(v.decode('utf-8')),
+    "enable_auto_commit": True
+}
