@@ -3,8 +3,10 @@ from django.utils import timezone
 from django.conf import settings
 import logging
 from core.systemCron.models import SystemCron, systemLog
-from core.systemLog.models import CitizenLog, SiteManagerLog, GranteeLog, AdministratorLog
+from core.systemLog.serializers import CitizenLogSerializer, SiteManagerLogSerializer, AdministratorLogSerializer, GranteeLogSerializer
+from core.systemLog.abstract.serializers import AbstractLogSerializer
 from core.abstract.kafka import NewKafkaConsumer
+from core.abstract.serializers import Ab
 
 logger = logging.getLogger(__name__)
 class Command(BaseCommand):
@@ -28,7 +30,35 @@ class Command(BaseCommand):
         for message in consumer:
             if count >= limit:
                 break
+            data : dict = message.value
+            administrator = data.pop('Administrator', None)
+            siteManager = data.pop('SiteManager', None)
+            grantee = data.pop('SiteManager', None)
+            if (administrator != None ):
+                data['Administrator'] = administrator
+                outcome  = self.createLog(data, AdministratorLogSerializer)
+            if (siteManager != None ):
+                data['SiteManager'] = siteManager
+                outcome = self.createLog(data, SiteManagerLogSerializer)
+            if (grantee != None ):
+                data['Grantee'] = grantee
+                outcome = self.createLog(data, GranteeLogSerializer)
+            else:
+                outcome = self.createLog(data, CitizenLogSerializer)
+            if not outcome:
+                self.stdout.write(self.style.ERROR('failed to createLog: \n'+data+'\n'))
 
-
+        consumer.close()
+        cron.Success = True
+        cron.Message = 'System Log has Been Processed'
         finished = cron.finish()
-        self.stdout.write(self.style.SUCCESS(cron))
+        self.stdout.write(self.style.SUCCESS(finished))
+
+    def createLog(data:dict, serializer_class: AbstractLogSerializer):
+        try:
+            serializer : AbstractLogSerializer = serializer_class(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return True
+        except:
+            return False
