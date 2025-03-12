@@ -3,7 +3,7 @@ from core.siteManager.models import SiteManager
 from core.administrator.models import Administrator
 from core.citizen.models import Citizen
 from core.grantee.models import Grantee
-from .abstract.serializers import AbstractLogSerializer
+from core.abstract_circular.serializers import AbstractLogSerializer
 from .models import CitizenLog, GranteeLog, AdministratorLog, SiteManagerLog
 
 

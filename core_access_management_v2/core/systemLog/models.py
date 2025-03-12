@@ -1,5 +1,5 @@
 from django.db import models
-from core.systemLog.abstract.models import AbstractLogModel, AbstractLogManager
+from core.abstract_circular.models import AbstractLogModel, AbstractLogManager
 
 # Create your models here.
 class CitizenLogManager(AbstractLogManager):

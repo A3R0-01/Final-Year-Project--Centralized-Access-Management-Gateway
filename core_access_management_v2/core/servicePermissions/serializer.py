@@ -1,5 +1,5 @@
 from rest_framework.serializers import SlugRelatedField, SerializerMethodField
-from core.abstract.serializers import AbstractPermissionSerializer
+from core.abstract_circular.serializers import AbstractPermissionSerializer
 from core.publicService.models import PublicService
 from core.publicService.serializers import PermissionPublicServiceSerializer
 from core.association.models import Association
@@ -9,7 +9,7 @@ from core.department.serializers import PermissionDepartmentSerializer
 from .models import PublicServicePermission, AssociationPermission, DepartmentPermission
 
 class PublicServicePermissionSerializer(AbstractPermissionSerializer):
-    PublicService = SlugRelatedField(queryset=PublicService.objects.all())
+    PublicService = SlugRelatedField(queryset=PublicService.objects.all(), slug_field='PublicId')
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

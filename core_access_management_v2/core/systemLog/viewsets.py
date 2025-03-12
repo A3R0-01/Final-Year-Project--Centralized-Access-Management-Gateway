@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from core.systemLog.abstract.viewsets import AdministratorLogViewSet, SiteManagerLogViewSet, GranteeLogViewSet
+from core.abstract_circular.viewsets import AdministratorLogViewSet, SiteManagerLogViewSet, GranteeLogViewSet
 from .serializers import CitizenLogSerializer, GranteeLogSerializer, AdministratorLogSerializer, SiteManagerLogSerializer
 # Create your views here.
 class GranteeCitizenLogViewSet(GranteeLogViewSet):

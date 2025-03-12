@@ -25,18 +25,19 @@ class PublicServiceManager(AbstractManager):
 
 ALLOWED_METHODS = ['GET', 'POST', 'DELETE', 'PATCH']
 DEFAULT_ALLOWED_METHODS = ['GET', 'POST', 'PATCH']
+def default_methods():
+    return [(m, m) for m in DEFAULT_ALLOWED_METHODS]
+
+class Methods(models.Model):
+    name = models.CharField(choices=default_methods(), unique=True)
 class PublicService(AbstractModel):
     Title = models.CharField(max_length=100, unique=True)
     MachineName = models.CharField(max_length=150, unique=True)
     Description = models.TextField()
-    Email = models.EmailField()
+    Email = models.EmailField(unique=True)
     Grantee = models.ManyToManyField(to='grantee.Grantee')
     Association = models.ForeignKey(to='association.Association', on_delete=models.PROTECT)
-    Methods = ArrayField(
-        models.CharField(max_length=6, choices=[(m, m) for m in ALLOWED_METHODS]),
-        default=[(m, m) for m in DEFAULT_ALLOWED_METHODS],
-        blank=False
-    )
+    Methods = models.ManyToManyField(to=Methods, null=True)
     Restricted = models.BooleanField(default=False)
     URL = models.URLField(unique=True)
     Visibility = models.BooleanField(default=True)

@@ -6,7 +6,7 @@ from core.association.models import Association
 from core.association.serializers import PublicServiceAssociationSerializer
 from core.grantee.models import Grantee
 from core.grantee.serializers import PublicServiceGranteeSerializer
-from .models import PublicService
+from .models import PublicService, Methods
 from pprint import pprint
 
 class CitizenPublicServiceSerializer(AbstractModelSerializer):
@@ -62,6 +62,7 @@ class CitizenPublicServiceSerializer(AbstractModelSerializer):
 
 class GranteePublicServiceSerializer(CitizenPublicServiceSerializer):
     Grantee = SlugRelatedField(queryset=Grantee.objects.all(), slug_field='PublicId', many=True)
+    Methods = SlugRelatedField(queryset=Methods.objects.all(), slug_field='name', many=True)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

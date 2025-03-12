@@ -43,7 +43,7 @@ class AdministratorPublicServicePermissionViewSet(AbstractAdministratorModelView
         if hasattr(administrator, 'department'):
             try:
                 associations = Association.objects.filter(Department=administrator.department)
-                publicSrvc =PublicService.objects.filter(Association_in=associations).get_by_id(publicServiceId)
+                publicSrvc =PublicService.objects.filter(Association__in=associations).get_by_id(publicServiceId)
                 request.data['PublicService'] = publicSrvc.PublicId.hex
             except:
                 raise ValidationError('Invalid Service')
