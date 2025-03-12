@@ -11,13 +11,10 @@ from pprint import pprint
 
 class CitizenPublicServiceSerializer(AbstractModelSerializer):
     Association = SlugRelatedField(queryset=Association.objects.all(), slug_field='PublicId')
-    Grantee = SlugRelatedField(queryset=Grantee.objects.all(), slug_field='PublicId', many=True)
     
     def to_representation(self, instance:PublicService):
         data = super().to_representation(instance)
-        data['Grantee'] = [ PublicServiceGranteeSerializer(grantee).data for grantee in instance.Grantee.all()]
         data['Association'] = PublicServiceAssociationSerializer(instance.Association).data
-        pprint(data)
         return data
 
     def update(self, instance : PublicService, validated_data):
@@ -57,13 +54,27 @@ class CitizenPublicServiceSerializer(AbstractModelSerializer):
     class Meta:
         model : PublicService = PublicService
         fields : list[str] = [
-            'id','Title', 'Email', 'Association','Restricted', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
+            'id','Title', 'Email', 'Association','Restricted', 'Description', 'URL', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id','Title', 'Email', 'Association','Restricted', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
+            'id','Title', 'Email', 'Association','Restricted', 'Description', 'URL', 'Created', 'Updated'
         ]
 
 class GranteePublicServiceSerializer(CitizenPublicServiceSerializer):
+    Grantee = SlugRelatedField(queryset=Grantee.objects.all(), slug_field='PublicId', many=True)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['Grantee'] = [ PublicServiceGranteeSerializer(grantee).data for grantee in instance.Grantee.all()]
+        return data
+    class Meta:
+        model : PublicService = PublicService
+        fields : list[str] = [
+            'id','Title', 'Email', 'Association','Restricted', 'Methods', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
+        ]
+        read_only_fields : list[str] = [
+            'id','Title', 'Email', 'Association','Restricted', 'Methods', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
+        ]
     pass
 
 class AdministratorPublicServiceSerializer(GranteePublicServiceSerializer):
