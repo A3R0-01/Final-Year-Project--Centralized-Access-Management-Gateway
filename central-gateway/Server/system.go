@@ -12,40 +12,62 @@ import (
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
 )
 
-var rudiUrl = "http://127.0.0.1:8002"
-var rudiUrl2 = "http://127.0.0.1:8001"
-var central_access_managementUrl = "http://127.0.0.1:8000/api"
-
 type Server struct {
-	id        string
-	EndPoints map[string]*types.Endpoint
-	Proxies   map[string]*httputil.ReverseProxy
+	id          string
+	EndPoints   map[string]*types.Endpoint
+	Proxies     map[string]*httputil.ReverseProxy
+	Credentials managerLogInCredentials
 }
 
-func (srv *Server) FetchEndpoints() {
-	endPoint1, err := NewEndpoint("server1", "service", "/service", rudiUrl, false, false, []string{"get", "patch"})
+func (srv *Server) FetchServices() *[]types.PublicService {
+	req, err := http.NewRequest("GET", centralDomain+"manager/service/", nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("ServerStartUp::\n Failed to generate request(fetchServices)")
 	}
-	endPoint2, err := NewEndpoint("server2", "stuff", "/stuff", rudiUrl2, false, false, []string{"get", "patch"})
+	req.Header.Set("Authorization", "Bearer "+srv.Credentials.Access)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("ServerStartUp::\n Failed to execute request(fetchServices)")
 	}
-	endPoint3, err := NewEndpoint("central_access_management", "central_access_management", "", central_access_managementUrl, false, false, []string{"get", "patch"})
-	if err != nil {
-		log.Fatal(err)
+	var services *[]types.PublicService
+	if err := json.NewDecoder(resp.Body).Decode(services); err != nil {
+		log.Fatal("ServerStartUp::\n Failed to decode response(fetchServices)")
 	}
-	endpoints := []*types.Endpoint{endPoint1, endPoint2, endPoint3}
-	if err := verify.VerifyMachineNames(endpoints); err != nil {
-		log.Fatal(err)
-	}
-	newEndpoints := map[string]*types.Endpoint{}
-	for _, endpoint := range endpoints {
-		newEndpoints[strings.ToLower(endpoint.MachineName)] = endpoint
-	}
+	return services
+}
 
-	srv.EndPoints = newEndpoints
-	// srv.EndPoints = endpoints
+func (srv *Server) GenerateEndPoints() {
+	services := srv.FetchServices()
+	camEndpoint, err := NewEndpoint("c_a_m", "c_a_m", "", central_access_managementUrl, []string{"GET", "PATCH", "DELETE", "POST"})
+	if err != nil {
+		log.Fatal(err)
+	}
+	endPoints := map[string]*types.Endpoint{}
+	endPoints[camEndpoint.MachineName] = camEndpoint
+
+	for _, service := range *services {
+		endpoint, err := NewEndpoint(service.Title, service.MachineName, "", service.URL, service.Methods)
+		if err != nil {
+			log.Fatal("Failed to create endpoint: \n\t" + service.String())
+		}
+		endPoints[service.MachineName] = endpoint
+	}
+	if err := verify.VerifyMachineNames(endPoints); err != nil {
+		log.Fatal("Duplicate ServicesNames ")
+	}
+	srv.EndPoints = endPoints
+}
+func (srv *Server) FetchEndpoints() {
+	// endPoint1, err := NewEndpoint("server1", "service", "/service", rudiUrl, []string{"GET", "PATCH"})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// endPoint2, err := NewEndpoint("server2", "stuff", "/stuff", rudiUrl2, []string{"GET", "PATCH"})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	srv.GenerateEndPoints()
 	srv.CreateProxies()
 }
 
@@ -71,22 +93,8 @@ func (srv *Server) HandleServe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.URL.Path = strings.Replace(path, serviceName, "/"+endPoint.FixedPath+"/", 1)
-	prev := ""
-	newString := ""
-	for key, str := range r.URL.Path {
-		if key == 0 {
-			prev = string(str)
-			newString = newString + prev
-			continue
-		}
-		if prev == "/" && string(str) == "/" {
-			continue
-		}
-		newString = newString + string(str)
-		prev = string(str)
 
-	}
-	r.URL.Path = newString
+	r.URL.Path = refineUrl(r.URL.Path)
 	fmt.Println(r.URL.Path)
 	proxy, exists := srv.Proxies[serviceName]
 	if !exists {
@@ -116,7 +124,9 @@ func (srv *Server) StartGateway(port string) {
 }
 
 func NewServer() *Server {
-	server := Server{}
+	credentials := generateManagerCredentials()
+	credentials.startCredentials()
+	server := Server{Credentials: *credentials}
 	server.FetchEndpoints()
 	return &server
 }

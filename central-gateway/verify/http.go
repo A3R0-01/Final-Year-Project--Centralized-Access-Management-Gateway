@@ -26,7 +26,7 @@ func VerifyMethods(methods []string) error {
 	return nil
 }
 
-func VerifyMachineNames(endpoints []*types.Endpoint) error {
+func VerifyMachineNames(endpoints map[string]*types.Endpoint) error {
 	for key, endpoint := range endpoints {
 		for secondKey, duplicate := range endpoints {
 			if key != secondKey {

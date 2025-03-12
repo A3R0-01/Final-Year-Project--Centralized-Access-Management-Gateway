@@ -8,13 +8,11 @@ import (
 type HandlerFunc func(http.ResponseWriter, *http.Request)
 
 type Endpoint struct {
-	ServiceName     string
-	MachineName     string
-	URL             *url.URL
-	RestrictMethods bool
-	RestrictPath    bool
-	FixedPath       string
-	Methods         []string
+	ServiceName string
+	MachineName string
+	URL         *url.URL
+	FixedPath   string
+	Methods     []string
 }
 
 type AssociationClient struct {
