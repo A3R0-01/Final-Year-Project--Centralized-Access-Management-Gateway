@@ -57,10 +57,10 @@ class CitizenPublicServiceSerializer(AbstractModelSerializer):
     class Meta:
         model : PublicService = PublicService
         fields : list[str] = [
-            'id','Title', 'Email', 'Association', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
+            'id','Title', 'Email', 'Association','Restricted', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id','Title', 'Email', 'Association', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
+            'id','Title', 'Email', 'Association','Restricted', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
         ]
 
 class GranteePublicServiceSerializer(CitizenPublicServiceSerializer):

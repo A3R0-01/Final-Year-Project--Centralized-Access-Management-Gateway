@@ -29,6 +29,7 @@ class PublicService(AbstractModel):
     Email = models.EmailField()
     Grantee = models.ManyToManyField(to='grantee.Grantee')
     Association = models.ForeignKey(to='association.Association', on_delete=models.PROTECT)
+    Restricted = models.BooleanField(default=False)
     URL = models.URLField(unique=True)
     Visibility = models.BooleanField(default=True)
 

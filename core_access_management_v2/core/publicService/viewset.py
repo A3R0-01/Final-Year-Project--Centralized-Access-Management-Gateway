@@ -34,10 +34,17 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
             departments.append(permission.Department)
         associations = Association.objects.filter(Department__in=departments)
         return self.serializer_class.Meta.model.objects.filter(Association__in=associations)
+    
+    def getQ_PublicService_Restricted(self):
+        return self.serializer_class.Meta.model.objects.filter(Restricted=False)
 
     def get_queryset(self):
+        by_association_permission = self.getQ_PublicService_Association()
+        by_department_permission = self.getQ_PublicService_Department()
+        by_service_permission = self.getQ_PublicService_Service()
+        by_publicity = self.getQ_PublicService_Restricted()
+        return by_publicity.union(by_department_permission).union(by_association_permission).union(by_service_permission)
 
-        return 
 
 class GranteePublicServiceViewSet(AbstractGranteeModelViewSet):
     http_method_names : tuple[str] = ('get',)
