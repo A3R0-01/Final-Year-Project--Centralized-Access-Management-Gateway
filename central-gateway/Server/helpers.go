@@ -11,7 +11,7 @@ import (
 
 type managerLogInCredentials struct {
 	Email           string `json:"Email"`
-	Password        string `json:"Password"`
+	Password        string `json:"password"`
 	ManagerUserName string `json:"ManagerUserName"`
 	ManagerPassword string `json:"ManagerPassword"`
 	Access          string `json:"access"`
@@ -23,16 +23,15 @@ func (c *managerLogInCredentials) login() {
 	if err != nil {
 		log.Fatal("Credentials json error")
 	}
-	req, err := http.NewRequest("POST", loginEndpoint, bytes.NewReader(credentials))
+	req, err := http.NewRequest("POST", loginEndpoint, bytes.NewBuffer(credentials))
 	if err != nil {
 		log.Fatal("Creation: http login Request")
 	}
-
+	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal("http login request failed")
 	}
-
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -56,10 +55,11 @@ func (c *managerLogInCredentials) refresh() bool {
 	if err != nil {
 		log.Fatal("Refresh:: Credentials json error")
 	}
-	req, err := http.NewRequest("POST", refreshEndpoint, bytes.NewReader(credentials))
+	req, err := http.NewRequest("POST", refreshEndpoint, bytes.NewBuffer(credentials))
 	if err != nil {
 		log.Fatal("Creation: http refresh Request")
 	}
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -89,13 +89,16 @@ func (c *managerLogInCredentials) refresh() bool {
 
 func (c *managerLogInCredentials) startCredentials() {
 	c.login()
-	for {
-		success := c.refresh()
-		if !success {
-			c.login()
+	go func() {
+		for {
+			success := c.refresh()
+			if !success {
+				c.login()
+			}
+			time.Sleep(time.Minute * 4)
 		}
-		time.Sleep(time.Minute * 5)
-	}
+	}()
+
 }
 
 func refineUrl(url string) string {

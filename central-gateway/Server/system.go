@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -29,11 +30,16 @@ func (srv *Server) FetchServices() *[]types.PublicService {
 	if err != nil {
 		log.Fatal("ServerStartUp::\n Failed to execute request(fetchServices)")
 	}
-	var services *[]types.PublicService
-	if err := json.NewDecoder(resp.Body).Decode(services); err != nil {
-		log.Fatal("ServerStartUp::\n Failed to decode response(fetchServices)")
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Failed to decode boby (fetchServices)")
 	}
-	return services
+	var services []types.PublicService
+	if err := json.Unmarshal(body, &services); err != nil {
+		log.Fatal("ServerStartUp::\n Failed to decode response(fetchServices)\n" + err.Error())
+	}
+	return &services
 }
 
 func (srv *Server) GenerateEndPoints() {
