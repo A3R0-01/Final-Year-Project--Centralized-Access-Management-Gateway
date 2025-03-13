@@ -17,7 +17,7 @@ type Server struct {
 	id          string
 	EndPoints   map[string]*types.Endpoint
 	Proxies     map[string]*httputil.ReverseProxy
-	Credentials managerLogInCredentials
+	Credentials ManagerLogInCredentials
 }
 
 func (srv *Server) FetchServices() *[]types.PublicService {

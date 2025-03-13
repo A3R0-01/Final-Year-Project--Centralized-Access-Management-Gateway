@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type managerLogInCredentials struct {
+type ManagerLogInCredentials struct {
 	Email           string `json:"Email"`
 	Password        string `json:"password"`
 	ManagerUserName string `json:"ManagerUserName"`
@@ -18,7 +18,7 @@ type managerLogInCredentials struct {
 	Refresh         string `json:"refresh"`
 }
 
-func (c *managerLogInCredentials) login() {
+func (c *ManagerLogInCredentials) login() {
 	credentials, err := json.Marshal(c)
 	if err != nil {
 		log.Fatal("Credentials json error")
@@ -42,7 +42,7 @@ func (c *managerLogInCredentials) login() {
 		log.Fatal("http server response failed:\n\tBody: \t" + string(bodyBytes))
 	}
 
-	var respContainer managerLogInCredentials
+	var respContainer ManagerLogInCredentials
 	if err := json.NewDecoder(resp.Body).Decode(&respContainer); err != nil {
 		log.Fatal("Credentials Decoding failed", err)
 	}
@@ -50,7 +50,7 @@ func (c *managerLogInCredentials) login() {
 	c.Refresh = respContainer.Refresh
 }
 
-func (c *managerLogInCredentials) refresh() bool {
+func (c *ManagerLogInCredentials) refresh() bool {
 	credentials, err := json.Marshal(c)
 	if err != nil {
 		log.Fatal("Refresh:: Credentials json error")
@@ -79,7 +79,7 @@ func (c *managerLogInCredentials) refresh() bool {
 		log.Fatal("Refresh: http server response failed:\n\tBody: \t" + string(bodyBytes))
 	}
 
-	var respContainer managerLogInCredentials
+	var respContainer ManagerLogInCredentials
 	if err := json.NewDecoder(resp.Body).Decode(&respContainer); err != nil {
 		log.Fatal("Refresh: Credentials Decoding failed", err)
 	}
@@ -87,7 +87,7 @@ func (c *managerLogInCredentials) refresh() bool {
 	return true
 }
 
-func (c *managerLogInCredentials) startCredentials() {
+func (c *ManagerLogInCredentials) startCredentials() {
 	c.login()
 	go func() {
 		for {
