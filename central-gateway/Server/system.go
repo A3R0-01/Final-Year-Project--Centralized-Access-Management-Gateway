@@ -21,7 +21,7 @@ type Server struct {
 }
 
 func (srv *Server) FetchServices() *[]types.PublicService {
-	req, err := http.NewRequest("GET", centralDomain+"manager/service/", nil)
+	req, err := http.NewRequest("GET", types.CentralDomain+"manager/service/", nil)
 	if err != nil {
 		log.Fatal("ServerStartUp::\n Failed to generate request(fetchServices)")
 	}
@@ -44,7 +44,7 @@ func (srv *Server) FetchServices() *[]types.PublicService {
 
 func (srv *Server) GenerateEndPoints() {
 	services := srv.FetchServices()
-	camEndpoint, err := NewEndpoint("c_a_m", "c_a_m", "", central_access_managementUrl, []string{"GET", "PATCH", "DELETE", "POST"})
+	camEndpoint, err := NewEndpoint("c_a_m", "c_a_m", "", types.Central_access_managementUrl, []string{"GET", "PATCH", "DELETE", "POST"})
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,0 +1,13 @@
+package types
+
+var (
+	CentralDomain                = "http://127.0.0.1:8000/api/"
+	LoginEndpoint                = CentralDomain + "manager/login/"
+	RefreshEndpoint              = CentralDomain + "auth/refresh/"
+	rudiUrl                      = "http://127.0.0.1:8002"
+	rudiUrl2                     = "http://127.0.0.1:8001"
+	Central_access_managementUrl = "http://127.0.0.1:8000/api"
+	Exempt_models                = []string{"login", "refresh"}
+	Base_models                  = []string{"manager", "grantee", "admin", "permissions", "log", "auth"}
+	SecondLevel_base_models      = []string{"permissions", "log"}
+)

@@ -80,7 +80,7 @@ router.register(r'grantee/association', GranteeAssociationModelViewSet, basename
 router.register(r'grantee/service', GranteePublicServiceViewSet, basename='grantee-service')
 router.register(r'grantee/request', GranteeRequestViewSet, basename='grantee-request')
 router.register(r'grantee/grant', GranteeGrantViewSet, basename='grantee-grant')
-router.register(r'grantee/log', GranteeCitizenLogViewSet, basename='grantee-log')
+# router.register(r'grantee/log', GranteeCitizenLogViewSet, basename='grantee-log')
 
 
 

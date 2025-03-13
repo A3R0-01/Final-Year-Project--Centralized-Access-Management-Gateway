@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
 )
 
 type ManagerLogInCredentials struct {
@@ -23,7 +25,7 @@ func (c *ManagerLogInCredentials) login() {
 	if err != nil {
 		log.Fatal("Credentials json error")
 	}
-	req, err := http.NewRequest("POST", loginEndpoint, bytes.NewBuffer(credentials))
+	req, err := http.NewRequest("POST", types.LoginEndpoint, bytes.NewBuffer(credentials))
 	if err != nil {
 		log.Fatal("Creation: http login Request")
 	}
@@ -55,7 +57,7 @@ func (c *ManagerLogInCredentials) refresh() bool {
 	if err != nil {
 		log.Fatal("Refresh:: Credentials json error")
 	}
-	req, err := http.NewRequest("POST", refreshEndpoint, bytes.NewBuffer(credentials))
+	req, err := http.NewRequest("POST", types.RefreshEndpoint, bytes.NewBuffer(credentials))
 	if err != nil {
 		log.Fatal("Creation: http refresh Request")
 	}
