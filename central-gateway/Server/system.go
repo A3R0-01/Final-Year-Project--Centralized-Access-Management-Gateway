@@ -7,15 +7,15 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"strings"
 
+	authenticator "github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/Authenticator"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
 )
 
 type Server struct {
 	id          string
-	EndPoints   map[string]*types.Endpoint
+	EndPoints   types.MapEndPoint
 	Proxies     map[string]*httputil.ReverseProxy
 	Credentials ManagerLogInCredentials
 }
@@ -44,7 +44,7 @@ func (srv *Server) FetchServices() *[]types.PublicService {
 
 func (srv *Server) GenerateEndPoints() {
 	services := srv.FetchServices()
-	camEndpoint, err := NewEndpoint("c_a_m", "c_a_m", "", types.Central_access_managementUrl, []string{"GET", "PATCH", "DELETE", "POST"})
+	camEndpoint, err := NewEndpoint("c_a_m", "c_a_m", "", types.Central_access_managementUrl, []string{"GET", "PATCH", "DELETE", "POST"}, "")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func (srv *Server) GenerateEndPoints() {
 	endPoints[camEndpoint.MachineName] = camEndpoint
 
 	for _, service := range *services {
-		endpoint, err := NewEndpoint(service.Title, service.MachineName, "", service.URL, service.Methods)
+		endpoint, err := NewEndpoint(service.Title, service.MachineName, "", service.URL, service.Methods, service.PublicId)
 		if err != nil {
 			log.Fatal("Failed to create endpoint: \n\t" + service.String())
 		}
@@ -87,43 +87,48 @@ func (srv *Server) CreateProxies() {
 
 }
 
-func (srv *Server) HandleServe(w http.ResponseWriter, r *http.Request) {
-	serviceName := srv.GetServiceName(r.URL.Path)
-	path := r.URL.Path
-	fmt.Println(path)
-	endPoint, exists := srv.EndPoints[serviceName]
-	if !exists {
-		data := map[string]string{"message": "Service Not Found"}
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(data)
-		return
-	}
-	r.URL.Path = strings.Replace(path, serviceName, "/"+endPoint.FixedPath+"/", 1)
+func (srv *Server) HandleServe(auth *authenticator.Authenticator, code *int) error {
 
-	r.URL.Path = refineUrl(r.URL.Path)
-	fmt.Println(r.URL.Path)
-	proxy, exists := srv.Proxies[serviceName]
+	proxy, exists := srv.Proxies[auth.Service]
 	if !exists {
 		data := map[string]string{"message": "Service Not Found"}
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(data)
-		return
+		auth.ResponseWriter.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(auth.ResponseWriter).Encode(data)
+		return fmt.Errorf("Proxy not found")
 	}
 	log.Println("this is the proxy: ", proxy)
-	proxy.ServeHTTP(w, r)
+	proxy.ModifyResponse = func(response *http.Response) error {
+		*code = response.StatusCode
+		return nil
+	}
+	proxy.ServeHTTP(auth.ResponseWriter, auth.Request)
+	return nil
 }
-
-func (srv *Server) GetServiceName(r string) string {
-	parts := strings.FieldsFunc(r, func(rw rune) bool {
-		return rw == '/'
-	})
-	log.Println("service accessed", parts[0])
-	return parts[0]
+func (srv *Server) Serve(w http.ResponseWriter, r *http.Request) {
+	authenticator := authenticator.NewAuthenticator(w, r)
+	if err := authenticator.PopulateAuthenticate(&srv.EndPoints); err != nil {
+		log.Println(err)
+		return
+	}
+	var code int = 0
+	if err := srv.HandleServe(authenticator, &code); err != nil {
+		log.Println(err)
+		return
+	}
+	if authenticator.Service == "c_a_m" {
+		authenticator.SystemLog.SetStatusCode(code)
+		fmt.Printf("Status Code is %d\n", code)
+	} else {
+		authenticator.SystemLog.SetObject("PublicService")
+		authenticator.SystemLog.SetRecordId(authenticator.ServiceId)
+		authenticator.SystemLog.SetMessage("Accessed Service: " + authenticator.Service + " at " + authenticator.Request.URL.Path)
+	}
 }
 
 func (srv *Server) StartGateway(port string) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		srv.HandleServe(w, r)
+		srv.Serve(w, r)
+		return
 	})
 
 	_ = http.ListenAndServe(":"+port, nil)

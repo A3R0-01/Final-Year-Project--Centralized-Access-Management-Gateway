@@ -102,22 +102,3 @@ func (c *ManagerLogInCredentials) startCredentials() {
 	}()
 
 }
-
-func refineUrl(url string) string {
-	prev := ""
-	newString := ""
-	for key, str := range url {
-		if key == 0 {
-			prev = string(str)
-			newString = newString + prev
-			continue
-		}
-		if prev == "/" && string(str) == "/" {
-			continue
-		}
-		newString = newString + string(str)
-		prev = string(str)
-
-	}
-	return newString
-}

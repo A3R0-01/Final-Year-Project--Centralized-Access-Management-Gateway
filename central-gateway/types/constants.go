@@ -8,6 +8,25 @@ var (
 	rudiUrl2                     = "http://127.0.0.1:8001"
 	Central_access_managementUrl = "http://127.0.0.1:8000/api"
 	Exempt_models                = []string{"login", "refresh"}
-	Base_models                  = []string{"manager", "grantee", "admin", "permissions", "log", "auth"}
-	SecondLevel_base_models      = []string{"permissions", "log"}
+	Base_models                  = []string{"manager", "grantee", "admin", "permission", "log", "auth"}
+	SecondLevel_base_models      = []string{"permission", "log"}
 )
+
+func RefineUrl(url string) string {
+	prev := ""
+	newString := ""
+	for key, str := range url {
+		if key == 0 {
+			prev = string(str)
+			newString = newString + prev
+			continue
+		}
+		if prev == "/" && string(str) == "/" {
+			continue
+		}
+		newString = newString + string(str)
+		prev = string(str)
+
+	}
+	return newString
+}

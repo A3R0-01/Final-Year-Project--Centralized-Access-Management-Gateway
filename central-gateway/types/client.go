@@ -17,6 +17,13 @@ type Endpoint struct {
 	URL         *url.URL
 	FixedPath   string
 	Methods     []string
+	ServiceId   string
+}
+type MapEndPoint map[string]*Endpoint
+
+func (m MapEndPoint) GetEndPoint(name string) (*Endpoint, bool) {
+	endPoint, exists := m[name]
+	return endPoint, exists
 }
 
 type AssociationClient struct {
@@ -31,10 +38,3 @@ type RequestData struct {
 	UserType string
 	URL      *url.URL
 }
-
-type Authenticator struct {
-	Request        *http.Request
-	ResponseWriter http.ResponseWriter
-}
-
-func (auth *Authenticator) Authenticate()
