@@ -12,7 +12,7 @@ class SiteManagerModelViewSet(AbstractSiteManagerModelViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self):
-        return self.request.user.siteManager
+        return self.request.user.sitemanager
 
     def get_queryset(self):
         return self.serializer_class.Meta.model.objects.all()

@@ -13,7 +13,7 @@ class GranteeModelsViewSet(AbstractGranteeModelViewSet):
         self.check_object_permissions(self.request, obj)
         return obj
     
-    def get_queryset(self):
+    def get_queryset(self): #get grantees from the same association
         return self.serializer_class.Meta.model.objects.filter(PublicId=self.request.user.grantee.PublicId)
 
 class AdministratorGranteeViewSet(AbstractAdministratorModelViewSet):

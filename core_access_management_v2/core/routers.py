@@ -33,7 +33,7 @@ router.register(r'grant', CitizenGrantViewSet, basename='grant')
 
 
 # SiteManager
-router.register(r'manager/siteManager', SiteManagerModelViewSet, basename='Manager')
+router.register(r'manager/manager', SiteManagerModelViewSet, basename='Manager')
 router.register(r'manager/login', LoginSiteManagerViewSet, basename='auth-login-manager')
 router.register(r'manager/citizen', SiteManagerCitizenModelViewSet, basename='manager-citizen')
 router.register(r'manager/administrator', SiteManagerAdministratorModelViewSet, basename='manager-administrator')
@@ -56,7 +56,7 @@ router.register(r'manager/permission/service', SiteManagerPublicServicePermissio
 # Administrator
 router.register(r'admin/login', LoginAdministratorViewSet, basename='auth-login-admin')
 router.register(r'admin/citizen', AdministratorCitizenModelViewSet, basename='admin-citizen')
-router.register(r'admin/administrator', AdministratorModelViewSet, basename='admin-administrator')
+router.register(r'admin/admin', AdministratorModelViewSet, basename='admin-administrator')
 router.register(r'admin/grantee', AdministratorGranteeViewSet, basename='admin-grantee')
 router.register(r'admin/department', AdministratorDepartmentViewSet, basename='admin-department')
 router.register(r'admin/association', AdministratorAssociationModelViewSet, basename='admin-association')
