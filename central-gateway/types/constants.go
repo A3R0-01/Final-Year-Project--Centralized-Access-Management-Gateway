@@ -10,6 +10,7 @@ var (
 	Exempt_models                = []string{"login", "refresh"}
 	Base_models                  = []string{"manager", "grantee", "admin", "permission", "log", "auth"}
 	SecondLevel_base_models      = []string{"permission", "log"}
+	KafkaLoggerTopic             = "systemLog"
 )
 
 func RefineUrl(url string) string {

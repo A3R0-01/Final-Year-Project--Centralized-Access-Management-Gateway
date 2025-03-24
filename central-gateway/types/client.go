@@ -7,8 +7,8 @@ import (
 
 type HandlerFunc func(http.ResponseWriter, *http.Request)
 
-type ServeInterface interface {
-	Serve(*Authenticator, interface{})
+type HandleServeInterface interface {
+	Serve(interface{})
 }
 
 type Endpoint struct {

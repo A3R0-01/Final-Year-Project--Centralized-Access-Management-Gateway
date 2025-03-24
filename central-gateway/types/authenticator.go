@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 )
 
 type Authenticator struct {
 	Request        *http.Request
 	ResponseWriter http.ResponseWriter
+	Code           *int
 	Service        string
 	ServiceId      string
 	SystemLog      SystemLogInterface
+	Proxy          *httputil.ReverseProxy
 }
 
 func (auth *Authenticator) PopulateAuthenticate(endpoints *MapEndPoint) error {
