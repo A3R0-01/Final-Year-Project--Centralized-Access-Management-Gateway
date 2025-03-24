@@ -16,3 +16,5 @@ class SiteManagerModelViewSet(AbstractSiteManagerModelViewSet):
 
     def get_queryset(self):
         return self.serializer_class.Meta.model.objects.all()
+
+

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	authenticator "github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/Authenticator"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
 )
@@ -87,14 +86,13 @@ func (srv *Server) CreateProxies() {
 
 }
 
-func (srv *Server) HandleServe(auth *authenticator.Authenticator, code *int) error {
-
+func (srv *Server) HandleRequest(auth *types.Authenticator, code *int) {
 	proxy, exists := srv.Proxies[auth.Service]
 	if !exists {
 		data := map[string]string{"message": "Service Not Found"}
 		auth.ResponseWriter.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(auth.ResponseWriter).Encode(data)
-		return fmt.Errorf("Proxy not found")
+		log.Println("Proxy not found")
 	}
 	log.Println("this is the proxy: ", proxy)
 	proxy.ModifyResponse = func(response *http.Response) error {
@@ -102,19 +100,20 @@ func (srv *Server) HandleServe(auth *authenticator.Authenticator, code *int) err
 		return nil
 	}
 	proxy.ServeHTTP(auth.ResponseWriter, auth.Request)
-	return nil
+	return
+}
+
+func (srv *Server) HandleServe(auth *types.Authenticator, code *int) {
+	srv.HandleRequest(auth, code)
 }
 func (srv *Server) Serve(w http.ResponseWriter, r *http.Request) {
-	authenticator := authenticator.NewAuthenticator(w, r)
+	authenticator := types.NewAuthenticator(w, r)
 	if err := authenticator.PopulateAuthenticate(&srv.EndPoints); err != nil {
 		log.Println(err)
 		return
 	}
 	var code int = 0
-	if err := srv.HandleServe(authenticator, &code); err != nil {
-		log.Println(err)
-		return
-	}
+	srv.HandleServe(authenticator, &code)
 	if authenticator.Service == "c_a_m" {
 		authenticator.SystemLog.SetStatusCode(code)
 		fmt.Printf("Status Code is %d\n", code)
