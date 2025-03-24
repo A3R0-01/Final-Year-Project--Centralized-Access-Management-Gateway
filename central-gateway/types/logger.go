@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -45,6 +46,18 @@ func NewLoggerKafkaProducer(prevServer HandleServeInterface) (*Logger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the producer: %s", err.Error())
 	}
+	go func() {
+		for e := range producer.Events() {
+			switch ev := e.(type) {
+			case *kafka.Message:
+				if ev.TopicPartition.Error != nil {
+					log.Printf("Delivery failed: %v\n ", ev.TopicPartition)
+				} else {
+					log.Printf("Delivered message: to %v\n", ev.TopicPartition)
+				}
+			}
+		}
+	}()
 	logger := Logger{
 		Producer: producer,
 		Topic:    KafkaLoggerTopic,
