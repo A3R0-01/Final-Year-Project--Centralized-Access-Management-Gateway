@@ -89,7 +89,7 @@ func (c *ManagerLogInCredentials) refresh() bool {
 	return true
 }
 
-func (c *ManagerLogInCredentials) startCredentials() {
+func (c *ManagerLogInCredentials) StartCredentials() {
 	c.login()
 	go func() {
 		for {

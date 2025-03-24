@@ -90,58 +90,9 @@ func (srv *Server) CreateProxies() {
 
 }
 
-func (srv *Server) HandleRequest(auth *types.Authenticator, code *int) {
-	proxy, exists := srv.Proxies[auth.Service]
-	if !exists {
-		data := map[string]string{"message": "Service Not Found"}
-		auth.ResponseWriter.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(auth.ResponseWriter).Encode(data)
-		log.Println("Proxy not found")
-	}
-	proxy.ModifyResponse = func(response *http.Response) error {
-		*code = response.StatusCode
-		return nil
-	}
-	log.Println("this is the proxy: ", proxy)
-
-	// proxy.ServeHTTP(auth.ResponseWriter, auth.Request)
-	// return
-}
-
-func (srv *Server) HandleServe(auth *types.Authenticator, code *int) {
-	srv.HandleRequest(auth, code)
-}
-func (srv *Server) Serve(w http.ResponseWriter, r *http.Request) {
-	var code int = 0
-	authenticator := types.NewAuthenticator(w, r)
-	if err := authenticator.PopulateAuthenticate(&srv.EndPoints); err != nil {
-		log.Println(err)
-		return
-	}
-	srv.HandleServe(authenticator, &code)
-	if authenticator.Service == "c_a_m" {
-		authenticator.SystemLog.SetStatusCode(code)
-		fmt.Printf("Status Code is %d\n", code)
-	} else {
-		authenticator.SystemLog.SetObject("PublicService")
-		authenticator.SystemLog.SetRecordId(authenticator.ServiceId)
-		authenticator.SystemLog.SetMessage("Accessed Service: " + authenticator.Service + " at " + authenticator.Request.URL.Path)
-	}
-}
-
-func (srv *Server) StartGateway(port string) {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		srv.Serve(w, r)
-		return
-	})
-
-	_ = http.ListenAndServe(":"+port, nil)
-}
-
 func NewServer() *Server {
 	credentials := generateManagerCredentials()
-	credentials.StartCredentials()
-
+	credentials.startCredentials()
 	server := Server{Credentials: *credentials}
 	server.FetchEndpoints()
 	return &server

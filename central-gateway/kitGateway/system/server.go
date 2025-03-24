@@ -1,13 +1,13 @@
-package server
+package system
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"net/http/httputil"
+	"net/url"
 
+	server "github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/Server"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
 )
@@ -15,8 +15,7 @@ import (
 type Server struct {
 	id          string
 	EndPoints   types.MapEndPoint
-	Proxies     map[string]*httputil.ReverseProxy
-	Credentials ManagerLogInCredentials
+	Credentials server.ManagerLogInCredentials
 }
 
 func (srv *Server) FetchServices() *[]types.PublicService {
@@ -73,76 +72,39 @@ func (srv *Server) FetchEndpoints() {
 	// }
 
 	srv.GenerateEndPoints()
-	srv.CreateProxies()
-}
-
-func (srv *Server) CreateProxies() {
-	srv.Proxies = map[string]*httputil.ReverseProxy{}
-	for _, endpoint := range srv.EndPoints {
-		proxy := httputil.NewSingleHostReverseProxy(endpoint.URL)
-		proxy.ModifyResponse = func(response *http.Response) error {
-			// modify page data
-			return nil
-		}
-		srv.Proxies[endpoint.MachineName] = proxy
-	}
-	fmt.Println("proxies at first", srv.Proxies)
-
-}
-
-func (srv *Server) HandleRequest(auth *types.Authenticator, code *int) {
-	proxy, exists := srv.Proxies[auth.Service]
-	if !exists {
-		data := map[string]string{"message": "Service Not Found"}
-		auth.ResponseWriter.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(auth.ResponseWriter).Encode(data)
-		log.Println("Proxy not found")
-	}
-	proxy.ModifyResponse = func(response *http.Response) error {
-		*code = response.StatusCode
-		return nil
-	}
-	log.Println("this is the proxy: ", proxy)
-
-	// proxy.ServeHTTP(auth.ResponseWriter, auth.Request)
-	// return
-}
-
-func (srv *Server) HandleServe(auth *types.Authenticator, code *int) {
-	srv.HandleRequest(auth, code)
-}
-func (srv *Server) Serve(w http.ResponseWriter, r *http.Request) {
-	var code int = 0
-	authenticator := types.NewAuthenticator(w, r)
-	if err := authenticator.PopulateAuthenticate(&srv.EndPoints); err != nil {
-		log.Println(err)
-		return
-	}
-	srv.HandleServe(authenticator, &code)
-	if authenticator.Service == "c_a_m" {
-		authenticator.SystemLog.SetStatusCode(code)
-		fmt.Printf("Status Code is %d\n", code)
-	} else {
-		authenticator.SystemLog.SetObject("PublicService")
-		authenticator.SystemLog.SetRecordId(authenticator.ServiceId)
-		authenticator.SystemLog.SetMessage("Accessed Service: " + authenticator.Service + " at " + authenticator.Request.URL.Path)
-	}
-}
-
-func (srv *Server) StartGateway(port string) {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		srv.Serve(w, r)
-		return
-	})
-
-	_ = http.ListenAndServe(":"+port, nil)
 }
 
 func NewServer() *Server {
 	credentials := generateManagerCredentials()
 	credentials.StartCredentials()
-
 	server := Server{Credentials: *credentials}
 	server.FetchEndpoints()
 	return &server
+}
+func NewEndpoint(serviceName string, machineName string, fixedPath string, serviceUrl string, methods []string, id string) (*types.Endpoint, error) {
+	formattedUrl, err := url.Parse(serviceUrl)
+	if err != nil {
+		return nil, err
+	}
+	if err := verify.VerifyMethods(methods); err != nil {
+		return nil, err
+	}
+
+	return &types.Endpoint{
+		ServiceName: serviceName,
+		MachineName: machineName,
+		URL:         formattedUrl,
+		FixedPath:   fixedPath,
+		Methods:     methods,
+		ServiceId:   id,
+	}, nil
+
+}
+func generateManagerCredentials() *server.ManagerLogInCredentials {
+	return &server.ManagerLogInCredentials{
+		ManagerUserName: "A3R0",
+		ManagerPassword: "bsrvnttngjltzl",
+		Email:           "erlsontmadara@gmail.com",
+		Password:        "1234bsrvnt",
+	}
 }
