@@ -59,10 +59,16 @@ func (auth *Authenticator) GetServiceName(r string) string {
 	return parts[0]
 }
 
-func NewAuthenticator(w http.ResponseWriter, r *http.Request) *Authenticator {
+//	func NewAuthenticator(w http.ResponseWriter, r *http.Request) *Authenticator {
+//		return &Authenticator{
+//			Request:        r,
+//			ResponseWriter: w,
+//			SystemLog:      &SystemLog{},
+//		}
+//	}
+func NewAuthenticator(r *http.Request) *Authenticator {
 	return &Authenticator{
-		Request:        r,
-		ResponseWriter: w,
-		SystemLog:      &SystemLog{},
+		Request:   r,
+		SystemLog: &SystemLog{},
 	}
 }

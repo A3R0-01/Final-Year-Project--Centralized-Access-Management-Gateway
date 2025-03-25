@@ -35,6 +35,7 @@ type SystemLogInterface interface {
 	SetRecordId(id string)
 	SetMessage(message string)
 	SetObject(object string)
+	GenerateLog() (SystemLogInterface, error)
 }
 
 type SystemLog struct {

@@ -113,7 +113,7 @@ func (srv *Server) HandleServe(auth *types.Authenticator, code *int) {
 }
 func (srv *Server) Serve(w http.ResponseWriter, r *http.Request) {
 	var code int = 0
-	authenticator := types.NewAuthenticator(w, r)
+	authenticator := types.NewAuthenticator(r)
 	if err := authenticator.PopulateAuthenticate(&srv.EndPoints); err != nil {
 		log.Println(err)
 		return
