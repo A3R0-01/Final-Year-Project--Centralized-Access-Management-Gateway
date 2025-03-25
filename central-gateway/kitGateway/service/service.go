@@ -16,43 +16,64 @@ import (
 )
 
 type Service interface {
-	Serve(*types.Authenticator)
+	Serve(*types.Authenticator) (*types.Authenticator, error)
+	GetServiceName() string
+	GetServiceId() string
+	GetServiceMachineName() string
+	GetProxy() *httputil.ReverseProxy
 }
 
 type BasicService struct {
-	Endpoint    *types.Endpoint
-	ServiceName string
-	ServiceId   string
-	Proxy       *httputil.ReverseProxy
+	Endpoint           *types.Endpoint
+	ServiceName        string
+	ServiceMachineName string
+	ServiceId          string
+	Proxy              *httputil.ReverseProxy
 }
 
-func (srvc *BasicService) Serve(auth *types.Authenticator) {
+func (srvc *BasicService) GetServiceName() string {
+	return srvc.ServiceName
+}
+func (srvc *BasicService) GetServiceId() string {
+	return srvc.ServiceId
+}
+func (srvc *BasicService) GetServiceMachineName() string {
+	return srvc.ServiceMachineName
+}
+func (srvc *BasicService) GetProxy() *httputil.ReverseProxy {
+	return srvc.Proxy
+}
+
+func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator, error) {
 	if auth.Service != srvc.ServiceName {
 		data := map[string]string{"message": "Service Not Found"}
 		auth.ResponseWriter.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(auth.ResponseWriter).Encode(data)
 		*auth.Code = http.StatusNotFound
-		log.Println("Proxy not found")
+		normalLog.Println("Proxy not found")
+		return auth, fmt.Errorf("service not found")
 	}
 	srvc.Proxy.ModifyResponse = func(response *http.Response) error {
 		*auth.Code = response.StatusCode
 		return nil
 	}
-	log.Println("this is the proxy: ", srvc.Proxy)
-	srvc.Proxy.ServeHTTP(auth.ResponseWriter, auth.Request)
+	normalLog.Println("this is the proxy: ", srvc.Proxy)
+	auth.Proxy = srvc.Proxy
+	return auth, nil
 }
 
 func NewBasicService(endPoint *types.Endpoint) *BasicService {
 	proxy := httputil.NewSingleHostReverseProxy(endPoint.URL)
 	return &BasicService{
-		Endpoint:    endPoint,
-		ServiceName: endPoint.ServiceName,
-		ServiceId:   endPoint.ServiceId,
-		Proxy:       proxy,
+		Endpoint:           endPoint,
+		ServiceName:        endPoint.ServiceName,
+		ServiceMachineName: endPoint.MachineName,
+		ServiceId:          endPoint.ServiceId,
+		Proxy:              proxy,
 	}
 }
 
-func NewProducer() (*kafka.Producer, nil) {
+func NewProducer() (*kafka.Producer, error) {
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": "host1:9092, host2:9092",
 		"client.id":         "central-access-gateway",
@@ -66,9 +87,9 @@ func NewProducer() (*kafka.Producer, nil) {
 			switch ev := e.(type) {
 			case *kafka.Message:
 				if ev.TopicPartition.Error != nil {
-					log.Printf("Delivery failed: %v\n ", ev.TopicPartition)
+					normalLog.Printf("Delivery failed: %v\n ", ev.TopicPartition)
 				} else {
-					log.Printf("Delivered message: to %v\n", ev.TopicPartition)
+					normalLog.Printf("Delivered message: to %v\n", ev.TopicPartition)
 				}
 			}
 		}
@@ -76,20 +97,20 @@ func NewProducer() (*kafka.Producer, nil) {
 	return producer, nil
 }
 
-func New(logger log.Logger) []Service {
+func New(logger log.Logger, server *system.Server) []Service {
 	var services []Service
-
-	server := system.NewServer()
 	producer, err := NewProducer()
 	if err != nil {
 		normalLog.Fatal("failed to create producer: ", err)
 	}
 	for _, endP := range server.EndPoints {
 		{
-			service := NewBasicService(endP)
-			service = NewLoggingMiddleware(logger, producer)(service)
+			basicService := NewBasicService(endP)
+			service := NewLoggingMiddleware(logger, producer)(basicService)
+			service = NewInstrumentingMiddleware()(service)
+			services = append(services, service)
 		}
-		services = append(services, service)
+
 	}
 	return services
 }
