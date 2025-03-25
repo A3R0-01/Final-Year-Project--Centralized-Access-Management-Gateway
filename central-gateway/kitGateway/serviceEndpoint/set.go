@@ -1,0 +1,43 @@
+package serviceEndpoint
+
+import (
+	"context"
+	"time"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/service"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+	"github.com/go-kit/kit/circuitbreaker"
+	"github.com/go-kit/kit/endpoint"
+	"github.com/go-kit/kit/metrics"
+	"github.com/go-kit/kit/ratelimit"
+	"github.com/go-kit/log"
+	"github.com/sony/gobreaker"
+	"golang.org/x/time/rate"
+)
+
+type Set struct {
+	Endpoints map[service.Service]endpoint.Endpoint
+}
+
+func New(services []service.Service, logger log.Logger, duration metrics.Histogram) Set {
+	var set Set
+	for _, service := range services {
+		var serviceEndpoint endpoint.Endpoint
+		{
+			serviceEndpoint = MakeServiceEndpoint(service)
+			serviceEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), 3))(serviceEndpoint)
+			serviceEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{}))(serviceEndpoint)
+			serviceEndpoint = LoggingMiddleware(log.With(logger, "method", service.GetServiceName()))(serviceEndpoint)
+			serviceEndpoint = InstrumentingMiddleware(duration.With("method", service.GetServiceName()))(serviceEndpoint)
+			set.Endpoints[service] = serviceEndpoint
+		}
+	}
+	return set
+}
+
+func MakeServiceEndpoint(service service.Service) endpoint.Endpoint {
+	return func(ctc context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(*types.Authenticator)
+		return service.Serve(req)
+	}
+}
