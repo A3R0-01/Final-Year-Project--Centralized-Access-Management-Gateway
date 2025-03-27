@@ -36,8 +36,6 @@ class LoginSiteManagerSerializer(TokenObtainPairSerializer):
         self.ManagerUserName = kwargs['data']['ManagerUserName']
 
     def validate(self, attrs):
-        pprint(attrs)
-        print('hello')
         data =  super().validate(attrs)
         refresh = self.get_token(self.user)
         if hasattr(self.user, 'sitemanager'):
