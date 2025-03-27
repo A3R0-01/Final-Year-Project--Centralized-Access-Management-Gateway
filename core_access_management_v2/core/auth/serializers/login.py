@@ -5,6 +5,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.models import update_last_login
 from core.citizen.serializers import CitizenSerializer
 from core.siteManager.serializers import SiteManagerSerializer
+from pprint import pprint
 
 INVALID_DATA = {
                     'access': 'denied',
@@ -35,6 +36,8 @@ class LoginSiteManagerSerializer(TokenObtainPairSerializer):
         self.ManagerUserName = kwargs['data']['ManagerUserName']
 
     def validate(self, attrs):
+        pprint(attrs)
+        print('hello')
         data =  super().validate(attrs)
         refresh = self.get_token(self.user)
         if hasattr(self.user, 'sitemanager'):

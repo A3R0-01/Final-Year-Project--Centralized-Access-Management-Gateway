@@ -1,6 +1,7 @@
 // pages/index.js
+"use client"
 import React from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import Layout from '@/components/layout/Layout'; // Import the Layout component
 
 const IndexPage = () => {
@@ -52,7 +53,7 @@ const IndexPage = () => {
             </p>
             <button
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              onClick={() => router.push('/citizen/login')}
+              onClick={() => router.push('/citizen')}
             >
               Login
             </button>

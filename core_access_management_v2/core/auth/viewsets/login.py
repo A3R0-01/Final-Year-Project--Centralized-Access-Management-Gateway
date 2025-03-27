@@ -5,6 +5,7 @@ from rest_framework.status import HTTP_200_OK
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from pprint import pprint
 
 class LoginCitizenViewSet(ViewSet):
     serializer_class = LoginCitizenSerializer

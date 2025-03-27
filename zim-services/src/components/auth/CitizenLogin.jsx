@@ -1,8 +1,9 @@
 // src/components/auth/CitizenLogin.js
+"use client"
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '@/redux/slices/authSlice';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 
 const CitizenLogin = () => {
   const [username, setUsername] = useState('');

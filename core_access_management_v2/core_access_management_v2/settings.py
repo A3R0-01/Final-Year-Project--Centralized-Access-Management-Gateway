@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework_simplejwt',
+    'corsheaders',
     'rest_framework',
     'django_crontab',
     'core',
@@ -68,6 +69,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -156,3 +158,8 @@ SYSTEM_LOG_KAFKA_SETTINGS = {
     'value_deserializer': lambda v : json.loads(v.decode('utf-8')),
     "enable_auto_commit": True
 }
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3001",  # React/Next.js frontend
+    "http://127.0.0.1:3001",
+]
