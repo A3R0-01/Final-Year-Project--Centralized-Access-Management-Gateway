@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	httpAddr := "8020"
+	httpAddr := ":8020"
 	var logger log.Logger
 	{
 		logger = log.NewLogfmtLogger(os.Stderr)
@@ -26,20 +26,22 @@ func main() {
 	var duration metrics.Histogram
 	{
 		duration = prometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-			Namespace: "Central Access Gateway",
-			Subsystem: "GateWay Metrics",
+			Namespace: "CentralAccessGateway",
+			Subsystem: "GateWayMetrics",
 			Name:      "request_duration_seconds",
 			Help:      "Request duration in seconds",
 		}, []string{"method", "success"})
 	}
-
+	var endPoints []*serviceEndpoint.Set
 	var (
 		httpListener, err = net.Listen("tcp", httpAddr)
 		server            = system.NewServer()
 		basicServices     = service.New(logger, server)
-		endPoints         = serviceEndpoint.New(basicServices, logger, duration)
-		httpHandler       = serviceTransport.NewHTTPHandler(endPoints, server, logger)
 	)
+	for _, basicService := range basicServices {
+		endPoints = append(endPoints, serviceEndpoint.New(basicService, logger, duration))
+	}
+	httpHandler := serviceTransport.NewHTTPHandler(endPoints, server, logger)
 
 	if err != nil {
 		logger.Log("transport", "HTTP", "during", "Listen", "err", err)

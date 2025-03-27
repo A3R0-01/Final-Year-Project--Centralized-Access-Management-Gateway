@@ -10,13 +10,14 @@ import (
 )
 
 type Authenticator struct {
-	Request        *http.Request
-	ResponseWriter http.ResponseWriter
-	Code           *int
-	Service        string
-	ServiceId      string
-	SystemLog      SystemLogInterface
-	Proxy          *httputil.ReverseProxy
+	Request            *http.Request
+	ResponseWriter     http.ResponseWriter
+	Code               *int
+	Service            string
+	ServiceMachineName string
+	ServiceId          string
+	SystemLog          SystemLogInterface
+	Proxy              *httputil.ReverseProxy
 }
 
 func (auth *Authenticator) PopulateAuthenticate(endpoints *MapEndPoint) error {
@@ -24,16 +25,16 @@ func (auth *Authenticator) PopulateAuthenticate(endpoints *MapEndPoint) error {
 	if err != nil {
 		return err
 	}
-	if err := auth.SystemLog.Populate(auth.Request); err != nil {
-		data := map[string]string{"message": "Authentication Failed"}
-		auth.ResponseWriter.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(auth.ResponseWriter).Encode(data)
-		return err
-	}
+
+	return auth.SystemLog.Populate(auth.Request, map[string]string{"service": auth.ServiceMachineName, "serviceId": auth.ServiceId})
+}
+
+func (auth *Authenticator) VerifyService() error {
 	return nil
 }
 
 func (auth *Authenticator) UrlData(endpoints *MapEndPoint) error {
+	auth.ServiceMachineName = auth.GetServiceName(auth.Request.URL.Path)
 	auth.Service = auth.GetServiceName(auth.Request.URL.Path)
 	path := auth.Request.URL.Path
 	fmt.Println(path)
@@ -42,11 +43,10 @@ func (auth *Authenticator) UrlData(endpoints *MapEndPoint) error {
 		data := map[string]string{"message": "Service Not Found"}
 		auth.ResponseWriter.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(auth.ResponseWriter).Encode(data)
-		return fmt.Errorf("Service Not Found")
+		return fmt.Errorf("service not found")
 	}
 	auth.ServiceId = endPoint.ServiceId
 	auth.Request.URL.Path = strings.Replace(path, auth.Service, "/"+endPoint.FixedPath+"/", 1)
-
 	auth.Request.URL.Path = RefineUrl(auth.Request.URL.Path)
 	fmt.Println(auth.Request.URL.Path)
 	return nil

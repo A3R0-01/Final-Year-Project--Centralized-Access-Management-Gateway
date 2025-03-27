@@ -28,12 +28,13 @@ type LoggingMiddleware struct {
 func NewLoggingMiddleware(logger log.Logger, producer *kafka.Producer) Middleware {
 	return func(service Service) Service {
 		return &LoggingMiddleware{
-			log:         logger,
-			producer:    producer,
-			ServiceName: service.GetServiceName(),
-			ServiceId:   service.GetServiceId(),
-			Proxy:       service.GetProxy(),
-			next:        service,
+			log:                logger,
+			producer:           producer,
+			ServiceName:        service.GetServiceName(),
+			ServiceMachineName: service.GetServiceMachineName(),
+			ServiceId:          service.GetServiceId(),
+			Proxy:              service.GetProxy(),
+			next:               service,
 		}
 	}
 }
@@ -84,10 +85,11 @@ func (md *LoggingMiddleware) Serve(auth *types.Authenticator) (*types.Authentica
 func NewInstrumentingMiddleware() Middleware {
 	return func(next Service) Service {
 		return &InstrumentingMiddleware{
-			next:        next,
-			ServiceName: next.GetServiceName(),
-			ServiceId:   next.GetServiceId(),
-			Proxy:       next.GetProxy(),
+			next:               next,
+			ServiceName:        next.GetServiceName(),
+			ServiceMachineName: next.GetServiceMachineName(),
+			ServiceId:          next.GetServiceId(),
+			Proxy:              next.GetProxy(),
 		}
 	}
 }

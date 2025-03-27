@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	normalLog "log"
 
@@ -46,19 +45,17 @@ func (srvc *BasicService) GetProxy() *httputil.ReverseProxy {
 
 func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator, error) {
 	if auth.Service != srvc.ServiceName {
-		data := map[string]string{"message": "Service Not Found"}
-		auth.ResponseWriter.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(auth.ResponseWriter).Encode(data)
 		*auth.Code = http.StatusNotFound
 		normalLog.Println("Proxy not found")
 		return auth, fmt.Errorf("service not found")
 	}
-	srvc.Proxy.ModifyResponse = func(response *http.Response) error {
-		*auth.Code = response.StatusCode
+	proxy := *srvc.Proxy
+	proxy.ModifyResponse = func(response *http.Response) error {
+		auth.Code = &response.StatusCode
 		return nil
 	}
 	normalLog.Println("this is the proxy: ", srvc.Proxy)
-	auth.Proxy = srvc.Proxy
+	auth.Proxy = &proxy
 	return auth, nil
 }
 
@@ -75,9 +72,7 @@ func NewBasicService(endPoint *types.Endpoint) *BasicService {
 
 func NewProducer() (*kafka.Producer, error) {
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "host1:9092, host2:9092",
-		"client.id":         "central-access-gateway",
-		"acks":              "all",
+		"bootstrap.servers": "localhost",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the producer: %s", err.Error())

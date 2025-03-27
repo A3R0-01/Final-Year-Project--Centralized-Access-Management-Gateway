@@ -54,10 +54,10 @@ class CitizenPublicServiceSerializer(AbstractModelSerializer):
     class Meta:
         model : PublicService = PublicService
         fields : list[str] = [
-            'id','Title', 'Email', 'Association','Restricted', 'Description', 'URL', 'Created', 'Updated'
+            'id','Title', "MachineName", 'Email', 'Association','Restricted', 'Description', 'URL', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id','Title', 'Email', 'Association','Restricted', 'Description', 'URL', 'Created', 'Updated'
+            'id','Title', "MachineName", 'Email', 'Association','Restricted', 'Description', 'URL', 'Created', 'Updated'
         ]
 
 class GranteePublicServiceSerializer(CitizenPublicServiceSerializer):
@@ -71,10 +71,10 @@ class GranteePublicServiceSerializer(CitizenPublicServiceSerializer):
     class Meta:
         model : PublicService = PublicService
         fields : list[str] = [
-            'id','Title', 'Email', 'Association','Restricted', 'Methods', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
+            'id','Title', "MachineName", 'Email', 'Association','Restricted', 'Methods', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id','Title', 'Email', 'Association','Restricted', 'Methods', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
+            'id','Title', "MachineName", 'Email', 'Association','Restricted', 'Methods', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
         ]
     pass
 
@@ -82,7 +82,7 @@ class AdministratorPublicServiceSerializer(GranteePublicServiceSerializer):
     class Meta:
         model : PublicService = PublicService
         fields : list[str] = [
-            'id','Title', 'Email', 'Association', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
+            'id','Title', "MachineName", 'Email', 'Association', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
             'id', 'Created', 'Updated'
@@ -97,10 +97,10 @@ class RequestPublicServiceSerializer(AbstractModelSerializer):
     class Meta:
         model : PublicService = PublicService
         fields : list[str] = [
-            'id','Title', 'URL'
+            'id','Title', "MachineName", 'URL'
         ]
         read_only_fields : list[str] =  [
-            'id','Title', 'URL'
+            'id','Title', "MachineName", 'URL'
         ]
 
 class PermissionPublicServiceSerializer(AbstractModelSerializer):
@@ -108,8 +108,8 @@ class PermissionPublicServiceSerializer(AbstractModelSerializer):
     class Meta:
         model : PublicService = PublicService
         fields : list[str] = [
-            'id','Title', 'URL'
+            'id','Title', "MachineName", 'URL'
         ]
         read_only_fields : list[str] =  [
-            'id','Title', 'URL'
+            'id','Title', "MachineName", 'URL'
         ]

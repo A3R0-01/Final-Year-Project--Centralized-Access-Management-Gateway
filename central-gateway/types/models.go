@@ -28,7 +28,7 @@ func (s *PublicService) String() string {
 }
 
 type SystemLogInterface interface {
-	Populate(request *http.Request) error
+	Populate(request *http.Request, service map[string]string) error
 	getCitizen(authenticationHeader string) error
 	getSpecialUserId(authenticationHeader string) error
 	SetStatusCode(statusCode int)
@@ -64,51 +64,66 @@ type GranteeSystemLog struct {
 	Grantee string `json:"Grantee"`
 }
 
-func (sl *SystemLog) Populate(request *http.Request) error {
+func (sl *SystemLog) Populate(request *http.Request, service map[string]string) error {
 	parts := strings.FieldsFunc(request.URL.Path, func(rw rune) bool {
 		return rw == '/'
 	})
 	var secondary bool = false
+	var found = false
 	var baseModel string
-	for key, routeComponent := range parts {
-
-		if answer, text := isBaseModel(routeComponent, secondary); !answer {
-			if baseModel == "auth" || baseModel == "manager" || baseModel == "grantee" || baseModel == "admin" {
-				sl.Object = Capitalize(text)
+	sl.RecordId = ""
+	if service["service"] == "c_a_m" {
+		for key, routeComponent := range parts {
+			if !found {
+				if answer, text := isBaseModel(routeComponent, secondary); !answer {
+					if baseModel == "auth" || baseModel == "manager" || baseModel == "grantee" || baseModel == "admin" {
+						sl.Object = Capitalize(text)
+					} else {
+						sl.Object = Capitalize(text) + Capitalize(baseModel)
+					}
+					found = true
+					continue
+				}
 			} else {
-				sl.Object = Capitalize(text) + Capitalize(baseModel)
+				sl.RecordId = routeComponent
 			}
-			break
-		}
 
-		baseModel = routeComponent
-		if (baseModel == "manager" || baseModel == "admin" || baseModel == "grantee" || baseModel == "auth") && key == 0 {
-			if baseModel == "auth" {
+			baseModel = routeComponent
+			if (baseModel == "manager" || baseModel == "admin" || baseModel == "grantee" || baseModel == "auth") && key == 0 {
+				if baseModel == "auth" {
+					sl.SpecialUser = "citizen"
+				} else {
+					sl.SpecialUser = baseModel
+				}
+			} else {
 				sl.SpecialUser = "citizen"
-			} else {
-				sl.SpecialUser = baseModel
 			}
-		} else {
-			sl.SpecialUser = "citizen"
+			secondary = true
 		}
-		secondary = true
+		sl.Method = request.Method
+		if sl.Method == http.MethodPost {
+			sl.Message = "Created Entity"
+		} else if sl.Method == http.MethodPatch {
+			sl.RecordId = parts[len(parts)-1]
+			sl.Message = "Edited Entity: " + sl.RecordId
+		} else if sl.Method == http.MethodDelete {
+			sl.RecordId = parts[len(parts)-1]
+			sl.Message = "Deleted Entity: " + sl.RecordId
+		} else {
+			sl.Message = "Accessd Entity: N\\A"
+		}
+	} else {
+		sl.SpecialUser = "citizen"
+		sl.Object = "Service"
+		sl.RecordId = service["serviceId"]
+		sl.Method = request.Method
+		sl.Message = "Accessed Service: " + service["service"]
 	}
 
-	sl.Method = request.Method
-	if sl.Method == http.MethodPost {
-		sl.Message = "Created Entity"
-	} else if sl.Method == http.MethodPatch {
-		sl.RecordId = parts[len(parts)-1]
-		sl.Message = "Edited Entity: " + sl.RecordId
-	} else if sl.Method == http.MethodDelete {
-		sl.RecordId = parts[len(parts)-1]
-		sl.Message = "Deleted Entity: " + sl.RecordId
-	} else {
-		sl.Message = "Accessd Entity: N\\A"
-	}
 	fmt.Println(sl.Object)
 	fmt.Println(sl.Method)
 	fmt.Println(sl.SpecialUser)
+	fmt.Println(sl.RecordId)
 	if !isExemptModel(strings.ToLower(sl.Object)) {
 		authenticationHeader := request.Header.Get("Authorization")
 		if authenticationHeader == "" {
@@ -156,7 +171,7 @@ func (sl *SystemLog) getCitizen(authenticationHeader string) error {
 		return err
 	}
 	sl.Citizen = user.PublicId
-	return nil
+	return sl.VerifyService(authenticationHeader)
 
 }
 func (sl *SystemLog) getSpecialUserId(authenticationHeader string) error {
@@ -172,7 +187,7 @@ func (sl *SystemLog) getSpecialUserId(authenticationHeader string) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Authentication Failed")
+		return fmt.Errorf("authentication failed")
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -184,6 +199,32 @@ func (sl *SystemLog) getSpecialUserId(authenticationHeader string) error {
 		return err
 	}
 	sl.SpecialUserId = user.PublicId
+	return nil
+}
+func (sl *SystemLog) VerifyService(authenticationHeader string) error {
+	if sl.Object == "Service" {
+		if sl.RecordId == "" {
+			return fmt.Errorf("service error")
+		}
+		fmt.Println("log: " + CentralDomain + "/service/" + sl.RecordId)
+		req, err := http.NewRequest("GET", CentralDomain+"/service/"+sl.RecordId, nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authenticationHeader)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode == http.StatusNotFound {
+			return fmt.Errorf("service unauthorized")
+		} else if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("authentication failed")
+		}
+
+	}
 	return nil
 }
 func (sl *SystemLog) GenerateLog() (SystemLogInterface, error) {
@@ -206,7 +247,7 @@ func (sl *SystemLog) GenerateLog() (SystemLogInterface, error) {
 		}, nil
 	}
 
-	return nil, fmt.Errorf("SpecialUser Not Set")
+	return nil, fmt.Errorf("specialUser not set")
 
 }
 

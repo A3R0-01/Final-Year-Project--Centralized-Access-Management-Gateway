@@ -16,23 +16,25 @@ import (
 )
 
 type Set struct {
-	Endpoints map[service.Service]endpoint.Endpoint
+	ServiceMachineName string
+	ServiceEndpoint    endpoint.Endpoint
 }
 
-func New(services []service.Service, logger log.Logger, duration metrics.Histogram) Set {
-	var set Set
-	for _, service := range services {
-		var serviceEndpoint endpoint.Endpoint
-		{
-			serviceEndpoint = MakeServiceEndpoint(service)
-			serviceEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), 3))(serviceEndpoint)
-			serviceEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{}))(serviceEndpoint)
-			serviceEndpoint = LoggingMiddleware(log.With(logger, "method", service.GetServiceName()))(serviceEndpoint)
-			serviceEndpoint = InstrumentingMiddleware(duration.With("method", service.GetServiceName()))(serviceEndpoint)
-			set.Endpoints[service] = serviceEndpoint
-		}
+func New(service service.Service, logger log.Logger, duration metrics.Histogram) *Set {
+
+	var serviceEndpoint endpoint.Endpoint
+	{
+		serviceEndpoint = MakeServiceEndpoint(service)
+		serviceEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), 3))(serviceEndpoint)
+		serviceEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{}))(serviceEndpoint)
+		serviceEndpoint = LoggingMiddleware(log.With(logger, "method", service.GetServiceName()))(serviceEndpoint)
+		serviceEndpoint = InstrumentingMiddleware(duration.With("method", service.GetServiceName()))(serviceEndpoint)
+
 	}
-	return set
+	return &Set{
+		ServiceEndpoint:    serviceEndpoint,
+		ServiceMachineName: service.GetServiceMachineName(),
+	}
 }
 
 func MakeServiceEndpoint(service service.Service) endpoint.Endpoint {
