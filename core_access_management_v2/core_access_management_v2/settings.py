@@ -158,8 +158,8 @@ SYSTEM_LOG_KAFKA_SETTINGS = {
     'value_deserializer': lambda v : json.loads(v.decode('utf-8')),
     "enable_auto_commit": True
 }
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3001",  # React/Next.js frontend
-    "http://127.0.0.1:3001",
-]
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3001",  # React/Next.js frontend
+#     "http://127.0.0.1:3001",
+# ]
