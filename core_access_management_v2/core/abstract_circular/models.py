@@ -1,5 +1,5 @@
 from django.db import models
-from datetime import datetime
+from django.utils import timezone
 from core.abstract.models import AbstractManager, AbstractModel
 
 class PermissionsManager(AbstractManager):
@@ -22,7 +22,7 @@ class AbstractPermission(AbstractModel):
         return citizens
     @property
     def permission_open(self):
-        time = datetime.now()
+        time = timezone.now()
         if time < self.StartTime:
             return False
         elif time > self.EndTime:

@@ -3,7 +3,10 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
+from django.core.exceptions import ObjectDoesNotExist
 from .serializers import AbstractModelSerializer
+from .models import AbstractManager
 from .authenticationClasses import IsSiteManager, IsAdministrator, IsGrantee
 # Create your views here.
 
@@ -14,9 +17,13 @@ class AbstractModelViewSet(ModelViewSet):
 
     def get_object(self):
         id = self.kwargs['pk']
-        obj = self.get_queryset().get_by_id(id)
+        try:
+            obj = self.get_queryset().get(PublicId=id)
+        except (ObjectDoesNotExist, ValueError, TypeError):
+            raise NotFound("Record Not Found")
         self.check_object_permissions(self.request, obj)
         return obj
+
 
     def get_queryset(self):
         return self.serializer_class.Meta.model.objects.all()
@@ -42,12 +49,16 @@ class AbstractGranteeModelViewSet(AbstractModelViewSet):
         return customAuthenticators
 
     def get_object(self):
+
         id = self.kwargs['pk']
-        obj = self.serializer_class.Meta.model.objects.get_by_id(id)
+        try:
+            obj = self.get_queryset().get(PublicId=id)
+        except (ObjectDoesNotExist, ValueError, TypeError):
+            raise NotFound("Record Not Found")
         self.check_object_permissions(self.request, obj)
         return obj
 
-    def get_queryset(self):
+    def get_queryset(self) -> AbstractManager :
         return self.serializer_class.Meta.model.objects.all()
 
     def create(self, request, *args, **kwargs):

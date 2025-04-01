@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from celery.schedules import crontab
 import json
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -41,7 +42,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'rest_framework',
-    'django_crontab',
+    'django_celery_results',
+    # 'django_crontab',
     'core',
     'core.citizen',
     'core.auth',
@@ -149,6 +151,18 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# System Crons
+# CRONJOBS = [
+#     ('*/2 * * * *', 'django.core.management.call_command', ['systemlogcron']),
+# ]
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_TASK_DEFAULT_QUEUE = 'celery'
+CELERY_BEAT_SCHEDULE = {
+    'system_log_cron': {
+        'task': 'myapp.tasks.system_log_cron',
+        'schedule': crontab(minute='*/2'),
+    },
+}
 # Topic for the Kafka system logs
 
 SYSTEM_LOG_KAFKA_SETTINGS = {

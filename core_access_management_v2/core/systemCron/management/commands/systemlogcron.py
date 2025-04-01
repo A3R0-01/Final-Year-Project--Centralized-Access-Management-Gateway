@@ -4,7 +4,7 @@ from django.conf import settings
 import logging
 from core.systemCron.models import SystemCron, systemLog
 from core.systemLog.serializers import CitizenLogSerializer, SiteManagerLogSerializer, AdministratorLogSerializer, GranteeLogSerializer
-from core.systemLog.abstract.serializers import AbstractLogSerializer
+from core.abstract_circular.serializers import AbstractLogSerializer
 from core.abstract.kafka import NewKafkaConsumer
 from core.abstract.serializers import Ab
 

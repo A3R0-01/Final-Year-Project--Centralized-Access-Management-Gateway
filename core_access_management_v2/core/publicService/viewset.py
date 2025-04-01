@@ -51,18 +51,18 @@ class GranteePublicServiceViewSet(AbstractGranteeModelViewSet):
     serializer_class = GranteePublicServiceSerializer
 
     def get_queryset(self):
-        return self.serializer_class.Meta.model.objects.filter(Association=self.request.user.grantee.Association)
+        return self.serializer_class.Meta.model.objects.filter(Grantee=self.request.user.grantee)
 
 class AdministratorPublicServiceViewSet(AbstractAdministratorModelViewSet):
     http_method_names : tuple[str] = ('get', 'patch', 'post', 'delete')
     serializer_class = AdministratorPublicServiceSerializer
 
     def get_queryset(self):
-        if hasattr(self.request.user.admin, 'department'):
+        if hasattr(self.request.user.administrator, 'department'):
             department = self.request.user.administrator.department
             associations = Association.objects.filter(Department=department)
             return self.serializer_class.Meta.model.objects.filter(Association__in=associations)
-        raise MethodNotAllowed('This Information is forbidden')
+        raise MethodNotAllowed('GET')
     @atomic
     def create(self, request, *args, **kwargs):
         association = request.data.pop('Association', False)

@@ -12,7 +12,8 @@ from core.grant.viewsets import CitizenGrantViewSet, GranteeGrantViewSet, Admini
 from core.systemLog.viewsets import GranteeCitizenLogViewSet, AdministratorCitizenLogViewSet, AdministratorGranteeLogViewSet, SiteManagerCitizenLogViewSet, SiteManagerGranteeLogViewSet, SiteManagerAdministratorLogViewSet, SiteManagerManagerLogViewSet
 from core.servicePermissions.viewsets import (
     SiteManagerAssociationPermissionViewSet, SiteManagerPublicServicePermissionViewSet, SiteManagerDepartmentPermissionViewSet,
-    AdministratorAssociationPermissionViewSet, AdministratorPublicServicePermissionViewSet, AdministratorDepartmentPermissionViewSet
+    AdministratorAssociationPermissionViewSet, AdministratorPublicServicePermissionViewSet, AdministratorDepartmentPermissionViewSet,
+    GranteePublicServicePermissionViewSet
 )
 
 router  = routers.SimpleRouter()
@@ -78,6 +79,7 @@ router.register(r'grantee/citizen', GranteeCitizenModelViewSet, basename='grante
 router.register(r'grantee/department', GranteeDepartmentViewSet, basename='grantee-department')
 router.register(r'grantee/association', GranteeAssociationModelViewSet, basename='grantee-association')
 router.register(r'grantee/service', GranteePublicServiceViewSet, basename='grantee-service')
+router.register(r'grantee/permission/service', GranteePublicServicePermissionViewSet, basename='grantee-permission-service')
 router.register(r'grantee/request', GranteeRequestViewSet, basename='grantee-request')
 router.register(r'grantee/grant', GranteeGrantViewSet, basename='grantee-grant')
 # router.register(r'grantee/log', GranteeCitizenLogViewSet, basename='grantee-log')
