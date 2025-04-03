@@ -20,10 +20,13 @@ class GranteeAssociationModelViewSet(AbstractGranteeModelViewSet):
     serializer_class = GranteeAssociationModelSerializer
 
     def get_queryset(self):
+        
         if hasattr(self.request.user, 'grantee'):
             grantee_association : Association = self.request.user.grantee.Association
+            queries = self.get_queries()
+            queries['PublicId'] = grantee_association.PublicId.hex
             # print(admin_department)
-            return self.serializer_class.Meta.model.objects.filter(PublicId=grantee_association.PublicId.hex)
+            return self.serializer_class.Meta.model.objects.filter(**queries)
         raise MethodNotAllowed
 
 class AdministratorAssociationModelViewSet(AbstractAdministratorModelViewSet):
@@ -33,10 +36,11 @@ class AdministratorAssociationModelViewSet(AbstractAdministratorModelViewSet):
     def get_queryset(self):
         if hasattr(self.request.user, 'administrator'):
             if hasattr(self.request.user.administrator, 'department'):
-                admin_department = self.request.user.administrator.department
+                queries = self.get_queries()
+                queries['Department'] = self.request.user.administrator.department
                 # print(admin_department)
                 # print(self.serializer_class.Meta.model.objects.filter(Department=admin_department))
-                return self.serializer_class.Meta.model.objects.filter(Department=admin_department)
+                return self.serializer_class.Meta.model.objects.filter(queries)
         raise MethodNotAllowed
 
     @atomic

@@ -43,7 +43,8 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
         by_department_permission = self.getQ_PublicService_Department()
         by_service_permission = self.getQ_PublicService_Service()
         by_publicity = self.getQ_PublicService_Restricted()
-        return by_publicity.union(by_department_permission).union(by_association_permission).union(by_service_permission)
+        queries = self.get_queries()
+        return by_publicity.union(by_department_permission).union(by_association_permission).union(by_service_permission).filter(**queries)
 
 
 class GranteePublicServiceViewSet(AbstractGranteeModelViewSet):
@@ -51,7 +52,9 @@ class GranteePublicServiceViewSet(AbstractGranteeModelViewSet):
     serializer_class = GranteePublicServiceSerializer
 
     def get_queryset(self):
-        return self.serializer_class.Meta.model.objects.filter(Grantee=self.request.user.grantee)
+        queries = self.get_queries()
+        queries['Grantee'] = self.request.user.grantee
+        return self.serializer_class.Meta.model.objects.filter(**queries)
 
 class AdministratorPublicServiceViewSet(AbstractAdministratorModelViewSet):
     http_method_names : tuple[str] = ('get', 'patch', 'post', 'delete')
@@ -61,7 +64,9 @@ class AdministratorPublicServiceViewSet(AbstractAdministratorModelViewSet):
         if hasattr(self.request.user.administrator, 'department'):
             department = self.request.user.administrator.department
             associations = Association.objects.filter(Department=department)
-            return self.serializer_class.Meta.model.objects.filter(Association__in=associations)
+            queries = self.get_queries()
+            queries['Association__in'] = associations
+            return self.serializer_class.Meta.model.objects.filter(**queries)
         raise MethodNotAllowed('GET')
     @atomic
     def create(self, request, *args, **kwargs):

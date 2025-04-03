@@ -8,6 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from .serializers import AbstractModelSerializer
 from .models import AbstractManager
 from .authenticationClasses import IsSiteManager, IsAdministrator, IsGrantee
+from pprint import pprint
 # Create your views here.
 
 class AbstractModelViewSet(ModelViewSet):
@@ -24,9 +25,27 @@ class AbstractModelViewSet(ModelViewSet):
         self.check_object_permissions(self.request, obj)
         return obj
 
+    def get_query_keys(self) -> list:
+        query_params = self.request.GET
+        query_list = list(query_params.keys())
+        return query_list
 
+    def get_model_attributes(self):
+        model_fields = self.serializer_class.Meta.model._meta.get_fields()
+        attribute_list = [field.name for field in model_fields if field.concrete]
+        return attribute_list
+
+    def get_queries(self) -> dict:
+        model_attributes = self.get_model_attributes()
+        key_words = {}
+        for query in self.get_query_keys() :
+            for attribute in model_attributes:
+                if attribute in query: key_words[query] = self.request.query_params.get(query)
+        return key_words
+    
     def get_queryset(self):
-        return self.serializer_class.Meta.model.objects.all()
+        queries = self.get_queries()
+        return self.serializer_class.Meta.model.objects.filter(**queries)
 
     def secondary_create(self, serializer_class: AbstractModelSerializer, data : dict[str], *args, **kwargs) -> str:
         serializer : AbstractModelSerializer = serializer_class(data=data)
@@ -62,6 +81,7 @@ class AbstractGranteeModelViewSet(AbstractModelViewSet):
         return self.serializer_class.Meta.model.objects.all()
 
     def create(self, request, *args, **kwargs):
+        pprint(request.data)
         serializer : AbstractModelSerializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer=serializer)

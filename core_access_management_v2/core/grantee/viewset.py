@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework.exceptions import PermissionDenied
 from core.abstract.viewset import AbstractGranteeModelViewSet, AbstractAdministratorModelViewSet, AbstractSiteManagerModelViewSet
+from core.association.models import Association
 from .serializers import GranteeSerializer, AdministratorGranteeSerializer, SiteManagerGranteeSerializer
 
 # Create your views here.
@@ -14,11 +15,22 @@ class GranteeModelsViewSet(AbstractGranteeModelViewSet):
         return obj
     
     def get_queryset(self): #get grantees from the same association
-        return self.serializer_class.Meta.model.objects.filter(PublicId=self.request.user.grantee.PublicId)
+        queries = self.get_queries()
+        queries['PublicId'] = self.request.user.grantee.PublicId
+        return self.serializer_class.Meta.model.objects.filter(**queries)
 
 class AdministratorGranteeViewSet(AbstractAdministratorModelViewSet):
     serializer_class = AdministratorGranteeSerializer
     http_method_names = ('patch', 'get', 'post', 'delete')
+
+    def get_queryset(self):
+        if hasattr(self.request.user.administrator, 'department' ):
+            department = self.request.user.administrator.department
+            associations = Association.objects.filter(Department=department)
+            queries = self.get_queries()
+            queries['Association__in'] = associations
+            return self.serializer_class.Meta.model.objects.filter(**queries)
+        return PermissionDenied('You do not have a department')
 
     def create(self, request, *args, **kwargs):
         request.data['Administrator'] = self.request.user.administrator.PublicId.hex

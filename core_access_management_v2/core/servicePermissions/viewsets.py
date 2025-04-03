@@ -30,7 +30,9 @@ class GranteePublicServicePermissionViewSet(AbstractGranteeModelViewSet):
     def get_queryset(self):
         grantee : Grantee = self.request.user.grantee
         publicServices = PublicService.objects.filter(Grantee=grantee)
-        return self.serializer_class.Meta.model.objects.filter(PublicService__in=publicServices)
+        queries = self.get_queries()
+        queries['PublicService__in'] = publicServices
+        return self.serializer_class.Meta.model.objects.filter(**queries)
     
     
     def create(self, request, *args, **kwargs):
@@ -40,7 +42,7 @@ class GranteePublicServicePermissionViewSet(AbstractGranteeModelViewSet):
             raise ValidationError('Invalid Service')
         if hasattr(grantee, 'association'):
             try:
-                publicSrvc =PublicService.objects.filter(Grantee=grantee).get_by_id(publicServiceId)
+                publicSrvc =PublicService.objects.filter(Grantee=grantee).get(PublicId=publicServiceId)
                 request.data['PublicService'] = publicSrvc.PublicId.hex
             except:
                 raise ValidationError('Invalid Service')
@@ -57,7 +59,9 @@ class AdministratorPublicServicePermissionViewSet(AbstractAdministratorModelView
         if hasattr(administrator, 'department'):
             associations = Association.objects.filter(Department=administrator.department)
             publicServices = PublicService.objects.filter(Association__in=associations)
-            return self.serializer_class.Meta.model.objects.filter(PublicService__in=publicServices)
+            queries = self.get_queries()
+            queries['PublicService__in'] = publicServices
+            return self.serializer_class.Meta.model.objects.filter(**queries)
         raise MethodNotAllowed()
     
     def create(self, request, *args, **kwargs):
@@ -68,7 +72,7 @@ class AdministratorPublicServicePermissionViewSet(AbstractAdministratorModelView
         if hasattr(administrator, 'department'):
             try:
                 associations = Association.objects.filter(Department=administrator.department)
-                publicSrvc =PublicService.objects.filter(Association__in=associations).get_by_id(publicServiceId)
+                publicSrvc =PublicService.objects.filter(Association__in=associations).get(PublicId=publicServiceId)
                 request.data['PublicService'] = publicSrvc.PublicId.hex
             except:
                 raise ValidationError('Invalid Service')
@@ -85,7 +89,9 @@ class AdministratorAssociationPermissionViewSet(AbstractAdministratorModelViewSe
         administrator = self.request.user.administrator
         if hasattr(administrator, 'department'):
             associations = Association.objects.filter(Department=administrator.department)
-            return self.serializer_class.Meta.model.objects.filter(Association__in=associations)
+            queries = self.get_queries()
+            queries['Association__in'] = associations
+            return self.serializer_class.Meta.model.objects.filter(**queries)
         raise MethodNotAllowed('You Do Not Belong to Any Department')
     
     def create(self, request, *args, **kwargs):
@@ -95,7 +101,7 @@ class AdministratorAssociationPermissionViewSet(AbstractAdministratorModelViewSe
             raise ValidationError('Invalid Association')
         if hasattr(administrator, 'department'):
             try:
-                association = Association.objects.filter(Department=administrator.department).get_by_id(associationId)
+                association = Association.objects.filter(Department=administrator.department).get(PublicId=associationId)
                 request.data['Association'] = association.PublicId.hex
             except:
                 raise ValidationError('Invalid Association')
@@ -110,12 +116,14 @@ class AdministratorDepartmentPermissionViewSet(AbstractAdministratorModelViewSet
     def get_queryset(self):
         administrator = self.request.user.administrator
         if hasattr(administrator, 'department'):
-            return self.serializer_class.Meta.model.objects.filter(Department=administrator.department)
+            queries = self.get_queries()
+            queries['Department'] = administrator.department
+            return self.serializer_class.Meta.model.objects.filter(**queries)
         raise MethodNotAllowed('You Do Not Belong to Any Department')
     
     def create(self, request, *args, **kwargs):
         administrator = self.request.user.administrator
         if hasattr(administrator, 'department'):
-            request.data['Department'] = administrator.department
+            request.data['Department'] = administrator.department.PublicId.hex
             return super().create(request, *args, **kwargs)
         raise MethodNotAllowed('You Do Not Belong to Any Department')

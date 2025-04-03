@@ -22,7 +22,9 @@ class AdministratorDepartmentViewSet(AbstractAdministratorModelViewSet):
     
     def get_queryset(self):
         if hasattr(self.request.user.administrator, 'department'):
-            return self.serializer_class.Meta.model.objects.filter(PublicId=self.request.user.administrator.department.PublicId.hex)
+            queries = self.get_queries()
+            queries['PublicId'] = self.request.user.administrator.department.PublicId.hex
+            return self.serializer_class.Meta.model.objects.filter(**queries)
         return MethodNotAllowed("Get")
 class SiteManagerDepartmentViewSet(AbstractSiteManagerModelViewSet):
 

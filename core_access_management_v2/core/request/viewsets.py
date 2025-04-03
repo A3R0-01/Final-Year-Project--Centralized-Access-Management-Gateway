@@ -12,7 +12,9 @@ class CitizenRequestViewSet(AbstractModelViewSet):
     http_method_names = ('get', 'post', 'patch')
 
     def get_queryset(self):
-        return self.serializer_class.Meta.model.objects.filter(Citizen=self.request.user)
+        queries = self.get_queries()
+        queries['Citizen'] = self.request.user
+        return self.serializer_class.Meta.model.objects.filter(**queries)
     @atomic
     def create(self, request, *args, **kwargs):
         request.data['Citizen'] = self.request.user.PublicId.hex
@@ -24,7 +26,9 @@ class GranteeRequestViewSet(AbstractGranteeModelViewSet):
 
     def get_queryset(self):
         if hasattr(self.request.user, 'grantee'):
-            return self.serializer_class.Meta.model.objects.filter(PublicService__Association=self.request.user.grantee.Association)
+            queries = self.get_queries()
+            queries['PublicService__Grantee'] = self.request.user.grantee
+            return self.serializer_class.Meta.model.objects.filter(**queries)
         else:
             raise MethodNotAllowed()
 
@@ -36,7 +40,9 @@ class AdministratorRequestViewSet(AbstractAdministratorModelViewSet):
         if hasattr(self.request.user, 'administrator'):
             department = Department.objects.get(Administrator=self.request.user.administrator)
             associations = Association.objects.filter(Department=department)
-            return self.serializer_class.Meta.model.objects.filter(PublicService__Association__in=associations)
+            queries = self.get_queries()
+            queries['PublicService__Association__in'] = associations
+            return self.serializer_class.Meta.model.objects.filter(**queries)
         raise MethodNotAllowed()
 
 class SiteManagerRequestViewSet(AbstractSiteManagerModelViewSet):

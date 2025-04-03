@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from datetime import datetime
 from core.abstract.models import AbstractManager, AbstractModel
 
@@ -18,7 +19,7 @@ class Grant(AbstractModel):
 
     @property
     def granted(self):
-        now = datetime.now()
+        now = timezone.now()
         if self.Decline:
             return False
         elif self.StartDate == None:

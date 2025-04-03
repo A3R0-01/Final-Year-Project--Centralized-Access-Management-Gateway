@@ -12,7 +12,9 @@ class CitizenGrantViewSet(AbstractModelViewSet):
     http_method_names = ('get')
 
     def get_queryset(self):
-        return super().get_queryset().filter(Request__Citizen=self.request.user)
+        queries = self.get_queries()
+        queries['Request__Citizen'] = self.request.user
+        return super().get_queryset().filter(**queries)
 
 class GranteeGrantViewSet(AbstractGranteeModelViewSet):
     serializer_class = GranteeGrantSerializer
@@ -20,8 +22,10 @@ class GranteeGrantViewSet(AbstractGranteeModelViewSet):
 
     def get_queryset(self):
         if hasattr(self.request.user, 'grantee'):
-            request = Request.objects.filter(PublicService__Association=self.request.user.grantee.Association)
-            return self.serializer_class.Meta.model.objects.filter(Request__in=request)
+            request = Request.objects.filter(PublicService__Grantee=self.request.user.grantee)
+            queries = self.get_queries()
+            queries['Request__in'] = request
+            return self.serializer_class.Meta.model.objects.filter(**queries)
         else:
             raise MethodNotAllowed("GET")
 
@@ -41,7 +45,9 @@ class AdministratorGrantViewSet(AbstractAdministratorModelViewSet):
             department = Department.objects.get(Administrator=self.request.user.administrator)
             associations = Association.objects.filter(Department=department)
             requests = Request.objects.filter(PublicService__Association__in=associations)
-            return self.serializer_class.Meta.model.objects.filter(Request__in=requests)
+            queries = self.get_queries()
+            queries['Request__in'] = requests
+            return self.serializer_class.Meta.model.objects.filter(**queries)
         else:
             raise MethodNotAllowed("GET")
 
