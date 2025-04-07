@@ -3,8 +3,8 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
-from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.exceptions import NotFound, ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from .serializers import AbstractModelSerializer
 from .models import AbstractManager
 from .authenticationClasses import IsSiteManager, IsAdministrator, IsGrantee
@@ -20,7 +20,7 @@ class AbstractModelViewSet(ModelViewSet):
         id = self.kwargs['pk']
         try:
             obj = self.get_queryset().get(PublicId=id)
-        except (ObjectDoesNotExist, ValueError, TypeError):
+        except (ObjectDoesNotExist, ValidationError, ValueError, TypeError):
             raise NotFound("Record Not Found")
         self.check_object_permissions(self.request, obj)
         return obj
@@ -72,7 +72,7 @@ class AbstractGranteeModelViewSet(AbstractModelViewSet):
         id = self.kwargs['pk']
         try:
             obj = self.get_queryset().get(PublicId=id)
-        except (ObjectDoesNotExist, ValueError, TypeError):
+        except (ObjectDoesNotExist, ValidationError, ValueError, TypeError):
             raise NotFound("Record Not Found")
         self.check_object_permissions(self.request, obj)
         return obj

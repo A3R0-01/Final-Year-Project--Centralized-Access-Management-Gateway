@@ -40,7 +40,7 @@ class AdministratorAssociationModelViewSet(AbstractAdministratorModelViewSet):
                 queries['Department'] = self.request.user.administrator.department
                 # print(admin_department)
                 # print(self.serializer_class.Meta.model.objects.filter(Department=admin_department))
-                return self.serializer_class.Meta.model.objects.filter(queries)
+                return self.serializer_class.Meta.model.objects.filter(**queries)
         raise MethodNotAllowed
 
     @atomic
