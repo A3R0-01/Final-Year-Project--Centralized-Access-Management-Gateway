@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/go-kit/log"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -85,6 +87,43 @@ func (md *LoggingMiddleware) Serve(auth *types.Authenticator) (*types.Authentica
 func NewInstrumentingMiddleware() Middleware {
 	return func(next Service) Service {
 		return &InstrumentingMiddleware{
+			globalReqCounter: promauto.NewCounter(prometheus.CounterOpts{
+				Namespace: "global_request_counter",
+				Name:      "global",
+			}),
+			serviceReqCounter: promauto.NewCounter(prometheus.CounterOpts{
+				Namespace: next.GetServiceMachineName() + "_request_counter",
+				Name:      next.GetServiceMachineName(),
+			}),
+			globalErrCounter: promauto.NewCounter(prometheus.CounterOpts{
+				Namespace: "global_error_counter",
+				Name:      "global",
+			}),
+			serviceErrCounter: promauto.NewCounter(prometheus.CounterOpts{
+				Namespace: next.GetServiceMachineName() + "_error_counter",
+				Name:      next.GetServiceMachineName(),
+			}),
+			globalReqLatency: promauto.NewHistogram(prometheus.HistogramOpts{
+				Namespace: "global_request_latency",
+				Name:      "global",
+				Buckets:   []float64{0.1, 0.5, 1.0},
+			}),
+			serviceReqLatency: promauto.NewHistogram(prometheus.HistogramOpts{
+				Namespace: next.GetServiceMachineName() + "_request_latency",
+				Name:      next.GetServiceMachineName(),
+				Buckets:   []float64{0.1, 0.5, 1.0},
+			}),
+			globalErrLatency: promauto.NewHistogram(prometheus.HistogramOpts{
+				Namespace: "global_error_latency",
+				Name:      "global",
+				Buckets:   []float64{0.1, 0.5, 1.0},
+			}),
+			serviceErrLatency: promauto.NewHistogram(prometheus.HistogramOpts{
+				Namespace: next.GetServiceMachineName() + "_error_latency",
+				Name:      next.GetServiceMachineName(),
+				Buckets:   []float64{0.1, 0.5, 1.0},
+			}),
+
 			next:               next,
 			ServiceName:        next.GetServiceName(),
 			ServiceMachineName: next.GetServiceMachineName(),
@@ -95,6 +134,14 @@ func NewInstrumentingMiddleware() Middleware {
 }
 
 type InstrumentingMiddleware struct {
+	globalReqCounter   prometheus.Counter
+	serviceReqCounter  prometheus.Counter
+	globalErrCounter   prometheus.Counter
+	serviceErrCounter  prometheus.Counter
+	globalReqLatency   prometheus.Histogram
+	serviceReqLatency  prometheus.Histogram
+	globalErrLatency   prometheus.Histogram
+	serviceErrLatency  prometheus.Histogram
 	next               Service
 	ServiceName        string
 	ServiceMachineName string
@@ -102,8 +149,23 @@ type InstrumentingMiddleware struct {
 	Proxy              *httputil.ReverseProxy
 }
 
-func (isMiddleware *InstrumentingMiddleware) Serve(auth *types.Authenticator) (*types.Authenticator, error) {
-	return isMiddleware.next.Serve(auth)
+func (isMiddleware *InstrumentingMiddleware) Serve(auth *types.Authenticator) (returnAuth *types.Authenticator, err error) {
+	defer func(start time.Time) {
+		if err != nil {
+			isMiddleware.globalErrCounter.Inc()
+			isMiddleware.serviceErrCounter.Inc()
+			isMiddleware.globalErrLatency.Observe(float64(time.Since(start).Seconds()))
+			isMiddleware.serviceErrLatency.Observe(float64(time.Since(start).Seconds()))
+
+		}
+		isMiddleware.serviceReqCounter.Inc()
+		isMiddleware.globalReqCounter.Inc()
+		isMiddleware.globalReqLatency.Observe(float64(time.Since(start).Seconds()))
+		isMiddleware.serviceReqLatency.Observe(float64(time.Since(start).Seconds()))
+
+	}(time.Now())
+	returnAuth, err = isMiddleware.next.Serve(auth)
+	return
 }
 
 func (isMiddleware *InstrumentingMiddleware) GetServiceName() string {
