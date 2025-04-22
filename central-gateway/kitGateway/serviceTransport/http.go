@@ -25,10 +25,13 @@ func errorEncoder(ctx context.Context, err error, w http.ResponseWriter) {
 		break
 	case "service not found":
 		w.WriteHeader(http.StatusNotFound)
+		break
 	case "service error":
 		w.WriteHeader(http.StatusInternalServerError)
+		break
 	case "service unauthorized":
 		w.WriteHeader(http.StatusUnauthorized)
+		break
 	default:
 		break
 	}
