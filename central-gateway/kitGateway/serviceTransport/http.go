@@ -55,7 +55,7 @@ func NewHTTPHandler(sets []*serviceEndpoint.Set, server *system.Server, logger l
 			options...,
 		))
 	}
-	m.Handle("/metrics", promhttp.Handler())
+	m.Handle("/promMetrics", promhttp.Handler())
 
 	return m
 

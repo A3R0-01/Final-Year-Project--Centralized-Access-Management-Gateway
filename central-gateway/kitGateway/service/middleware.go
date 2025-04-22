@@ -84,40 +84,30 @@ func (md *LoggingMiddleware) Serve(auth *types.Authenticator) (*types.Authentica
 	return md.next.Serve(auth)
 }
 
-func NewInstrumentingMiddleware() Middleware {
+func NewInstrumentingMiddleware(globalMetricsHolder *types.GlobalMetricsHolder) Middleware {
 	return func(next Service) Service {
+		globalMetricsHolder.GlobalServicesCounter.Inc()
 		return &InstrumentingMiddleware{
-			globalReqCounter: promauto.NewCounter(prometheus.CounterOpts{
-				Namespace: "global_request_counter",
-				Name:      "global",
-			}),
+			globalReqCounter: globalMetricsHolder.GlobalReqCounter,
+			globalErrCounter: globalMetricsHolder.GlobalErrCounter,
+			globalReqLatency: globalMetricsHolder.GlobalReqLatency,
+			globalErrLatency: globalMetricsHolder.GlobalErrLatency,
 			serviceReqCounter: promauto.NewCounter(prometheus.CounterOpts{
 				Namespace: next.GetServiceMachineName() + "_request_counter",
 				Name:      next.GetServiceMachineName(),
 			}),
-			globalErrCounter: promauto.NewCounter(prometheus.CounterOpts{
-				Namespace: "global_error_counter",
-				Name:      "global",
-			}),
+
 			serviceErrCounter: promauto.NewCounter(prometheus.CounterOpts{
 				Namespace: next.GetServiceMachineName() + "_error_counter",
 				Name:      next.GetServiceMachineName(),
 			}),
-			globalReqLatency: promauto.NewHistogram(prometheus.HistogramOpts{
-				Namespace: "global_request_latency",
-				Name:      "global",
-				Buckets:   []float64{0.1, 0.5, 1.0},
-			}),
+
 			serviceReqLatency: promauto.NewHistogram(prometheus.HistogramOpts{
 				Namespace: next.GetServiceMachineName() + "_request_latency",
 				Name:      next.GetServiceMachineName(),
 				Buckets:   []float64{0.1, 0.5, 1.0},
 			}),
-			globalErrLatency: promauto.NewHistogram(prometheus.HistogramOpts{
-				Namespace: "global_error_latency",
-				Name:      "global",
-				Buckets:   []float64{0.1, 0.5, 1.0},
-			}),
+
 			serviceErrLatency: promauto.NewHistogram(prometheus.HistogramOpts{
 				Namespace: next.GetServiceMachineName() + "_error_latency",
 				Name:      next.GetServiceMachineName(),

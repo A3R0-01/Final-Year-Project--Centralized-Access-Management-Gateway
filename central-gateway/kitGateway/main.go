@@ -9,6 +9,7 @@ import (
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/serviceEndpoint"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/serviceTransport"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/system"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-kit/log"
@@ -33,10 +34,11 @@ func main() {
 		}, []string{"method", "success"})
 	}
 	var endPoints []*serviceEndpoint.Set
+	globalMetricsHolder := types.NewGlobalMetricsHolder()
 	var (
 		httpListener, err = net.Listen("tcp", httpAddr)
 		server            = system.NewServer()
-		basicServices     = service.New(logger, server)
+		basicServices     = service.New(logger, server, globalMetricsHolder)
 	)
 	for _, basicService := range basicServices {
 		endPoints = append(endPoints, serviceEndpoint.New(basicService, logger, duration))

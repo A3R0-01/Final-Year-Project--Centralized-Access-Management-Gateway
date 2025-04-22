@@ -92,7 +92,7 @@ func NewProducer() (*kafka.Producer, error) {
 	return producer, nil
 }
 
-func New(logger log.Logger, server *system.Server) []Service {
+func New(logger log.Logger, server *system.Server, globalMetricsHolder *types.GlobalMetricsHolder) []Service {
 	var services []Service
 	producer, err := NewProducer()
 	if err != nil {
@@ -102,7 +102,7 @@ func New(logger log.Logger, server *system.Server) []Service {
 		{
 			basicService := NewBasicService(endP)
 			service := NewLoggingMiddleware(logger, producer)(basicService)
-			service = NewInstrumentingMiddleware()(service)
+			service = NewInstrumentingMiddleware(globalMetricsHolder)(service)
 			services = append(services, service)
 		}
 
