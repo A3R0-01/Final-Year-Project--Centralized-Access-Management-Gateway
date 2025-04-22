@@ -14,6 +14,7 @@ import (
 	"github.com/go-kit/kit/transport"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/go-kit/log"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func errorEncoder(ctx context.Context, err error, w http.ResponseWriter) {
@@ -51,6 +52,7 @@ func NewHTTPHandler(sets []*serviceEndpoint.Set, server *system.Server, logger l
 			options...,
 		))
 	}
+	m.Handle("/metrics", promhttp.Handler())
 
 	return m
 
