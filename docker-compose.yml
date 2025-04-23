@@ -1,42 +1,58 @@
 version: '3'
 services:
-  central_gateway:
-    build: /central-gateway/
-    container_name: central_gateway-container
+  # central_gateway:
+  #   build: /central-gateway/
+  #   container_name: central_gateway-container
+  #   ports:
+  #     - "8020:8020"
+  #   depends_on:
+  #     - core_access
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
     ports:
-      - "8020:8020"
-    depends_on:
-      - core_access
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prom_data:/prometheus
   grafana:
     image: grafana/grafana
     container_name: grafana
+    ports:
+      - 3000:3000
     restart: unless-stopped
-    ports:
-      - '8050:8050'
-    volumes:
-      - grafana-storage:/var/lib/grafana
-  core_access:
-    build: /core_access_management_v2/
-    volumes:
-      - core_access_management_v2:/core_access_management_v2
-    ports:
-      - 8000:8000
-    image: core_access:core_access-image
-    container_name: core_access-django-container
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py collectstatic --noinput &&
-             python manage.py runserver 0.0.0.0:8000"
-    depends_on:
-      - core_access_db
-  core_access_db:
-    image: postgres
-    volumes:
-      - postgres_database/db:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=core_access_management_v2
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=bsrvnt
-    container_name: core_access-db-container
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=bsrvnt
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+      - grafana-storage:/var/lib/grafana
+  # core_access:
+  #   build: /core_access_management_v2/
+  #   volumes:
+  #     - core_access_management_v2:/core_access_management_v2
+  #   ports:
+  #     - 8000:8000
+  #   image: core_access:core_access-image
+  #   container_name: core_access-django-container
+  #   command: >
+  #     sh -c "python manage.py migrate &&
+  #            python manage.py collectstatic --noinput &&
+  #            python manage.py runserver 0.0.0.0:8000"
+  #   depends_on:
+  #     - core_access_db
+  # core_access_db:
+  #   image: postgres
+  #   volumes:
+  #     - postgres_database/db:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_DB=core_access_management_v2
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=bsrvnt
+  #   container_name: core_access-db-container
 volumes:
   grafana-storage: {}
+  prom_data:
