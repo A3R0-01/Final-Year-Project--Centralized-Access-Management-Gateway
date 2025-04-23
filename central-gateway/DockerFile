@@ -1,0 +1,22 @@
+FROM golang:1.23.8-alpine as builder
+RUN mkdir /app
+WORKDIR /app
+ADD . /app
+RUN go clean --modcache
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -0 main ./kitGateway/
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+RUN apk add --no-cache git make msl-dev go
+COPY --from=builder /app/main .
+
+ENV GOROOT=/usr/lib/go
+ENV GOPATH=/go
+ENV PATH=/go/bin:$PATH
+
+RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
+EXPOSE 8020
+CMD [ "./main" ]
+
