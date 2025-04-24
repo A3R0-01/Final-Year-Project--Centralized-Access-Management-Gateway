@@ -17,4 +17,6 @@ scrape_configs:
   metrics_path: /promMetrics
   scheme: http
   static_configs:
-  - targets: ['host.docker.internal:8020']
+  - targets: 
+    - host.docker.internal:8020
+    - host.docker.internal:8000
