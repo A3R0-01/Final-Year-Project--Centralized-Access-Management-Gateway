@@ -81,6 +81,9 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string) 
 					} else {
 						sl.Object = Capitalize(text) + Capitalize(baseModel)
 					}
+					if sl.Object == "Service" {
+						sl.Object = "PublicService"
+					}
 					found = true
 					continue
 				}
