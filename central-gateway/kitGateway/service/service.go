@@ -44,8 +44,7 @@ func (srvc *BasicService) GetProxy() *httputil.ReverseProxy {
 }
 
 func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator, error) {
-	if auth.Service != srvc.ServiceName {
-		*auth.Code = http.StatusNotFound
+	if auth.Service != srvc.ServiceMachineName {
 		normalLog.Println("Proxy not found")
 		return auth, fmt.Errorf("service not found")
 	}

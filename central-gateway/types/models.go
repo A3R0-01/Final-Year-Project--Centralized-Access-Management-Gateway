@@ -209,8 +209,8 @@ func (sl *SystemLog) VerifyService(authenticationHeader string) error {
 		if sl.RecordId == "" {
 			return fmt.Errorf("service error")
 		}
-		fmt.Println("log: " + CentralDomain + "/service/" + sl.RecordId)
-		req, err := http.NewRequest("GET", CentralDomain+"/service/"+sl.RecordId, nil)
+		fmt.Println("log: " + CentralDomain + "service/" + sl.RecordId)
+		req, err := http.NewRequest("GET", CentralDomain+"service/"+sl.RecordId, nil)
 		if err != nil {
 			return err
 		}

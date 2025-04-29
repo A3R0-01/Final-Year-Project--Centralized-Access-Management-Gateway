@@ -17,10 +17,12 @@ type Authenticator struct {
 	ServiceMachineName string
 	ServiceId          string
 	SystemLog          SystemLogInterface
+	Endpoints          *MapEndPoint
 	Proxy              *httputil.ReverseProxy
 }
 
 func (auth *Authenticator) PopulateAuthenticate(endpoints *MapEndPoint) error {
+	auth.Endpoints = endpoints
 	err := auth.UrlData(endpoints)
 	if err != nil {
 		return err

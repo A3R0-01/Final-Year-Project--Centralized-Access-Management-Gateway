@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.db.transaction import atomic
-from rest_framework.exceptions import ValidationError, MethodNotAllowed
+from django.core.exceptions import ObjectDoesNotExist, ValidationError as ValidationError_Django
+from rest_framework.exceptions import ValidationError, MethodNotAllowed, NotFound
 from core.association.models import Association
 from core.abstract.viewset import AbstractModelViewSet, AbstractGranteeModelViewSet, AbstractAdministratorModelViewSet, AbstractSiteManagerModelViewSet
 from core.association.serializers import AdministratorAssociationModelSerializer, SiteManagerAssociationModelSerializer
@@ -12,20 +13,37 @@ from .serializers import CitizenPublicServiceSerializer, GranteePublicServiceSer
 class CitizenPublicServiceViewSet(AbstractModelViewSet):
     http_method_names : tuple[str] = ('get',)
     serializer_class = CitizenPublicServiceSerializer
+    def get_object(self):
+        id = self.kwargs['pk']
+        obj = None
+        for func in [self.getQ_PublicService_Association, self.getQ_PublicService_Department, self.getQ_PublicService_Restricted, self.getQ_PublicService_Service]:
+            try:
+                obj = func().get(PublicId=id)
+                if obj:break
+            except (ObjectDoesNotExist, ValidationError_Django, ValueError, TypeError):
+                continue
+        if obj:
+            self.check_object_permissions(self.request, obj)
+            return obj
+        raise NotFound("Service Not Found")
 
     def getQ_PublicService_Service(self):
         publicServicePermissions = PublicServicePermission.objects.filter(Citizens=self.request.user)
         publicServices = []
         for permission in publicServicePermissions:
             publicServices.append(permission.PublicId.hex)
-        return self.serializer_class.Meta.model.objects.filter(PublicId__in=publicServices)
+        queries = self.get_queries()
+        queries["PublicId__in"] = publicServices
+        return self.serializer_class.Meta.model.objects.filter(**queries)
 
     def getQ_PublicService_Association(self):
         associationPermission = AssociationPermission.objects.filter(Citizens=self.request.user)
         associations = []
         for permission in associationPermission:
             associations.append(permission.Association)
-        return self.serializer_class.Meta.model.objects.filter(Association__in=associations)
+        queries = self.get_queries()
+        queries["Association__in"] = associations
+        return self.serializer_class.Meta.model.objects.filter(**queries)
 
     def getQ_PublicService_Department(self):
         departmentPermissions = DepartmentPermission.objects.filter(Citizens=self.request.user)
@@ -33,7 +51,9 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
         for permission in departmentPermissions:
             departments.append(permission.Department)
         associations = Association.objects.filter(Department__in=departments)
-        return self.serializer_class.Meta.model.objects.filter(Association__in=associations)
+        queries = self.get_queries()
+        queries["Association__in"] = associations
+        return self.serializer_class.Meta.model.objects.filter(**queries)
     
     def getQ_PublicService_Restricted(self):
         return self.serializer_class.Meta.model.objects.filter(Restricted=False)
@@ -43,8 +63,7 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
         by_department_permission = self.getQ_PublicService_Department()
         by_service_permission = self.getQ_PublicService_Service()
         by_publicity = self.getQ_PublicService_Restricted()
-        queries = self.get_queries()
-        return by_publicity.union(by_department_permission).union(by_association_permission).union(by_service_permission).filter(**queries)
+        return by_publicity.union(by_department_permission).union(by_association_permission).union(by_service_permission)
 
 
 class GranteePublicServiceViewSet(AbstractGranteeModelViewSet):
