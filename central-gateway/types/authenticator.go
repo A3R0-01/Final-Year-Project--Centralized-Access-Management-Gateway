@@ -39,7 +39,7 @@ func (auth *Authenticator) UrlData(endpoints *MapEndPoint) error {
 	auth.ServiceMachineName = auth.GetServiceName(auth.Request.URL.Path)
 	auth.Service = auth.GetServiceName(auth.Request.URL.Path)
 	path := auth.Request.URL.Path
-	fmt.Println(path)
+	log.Println(path)
 	endPoint, exists := endpoints.GetEndPoint(auth.Service)
 	if !exists {
 		data := map[string]string{"message": "Service Not Found"}
@@ -48,7 +48,7 @@ func (auth *Authenticator) UrlData(endpoints *MapEndPoint) error {
 		return fmt.Errorf("service not found")
 	}
 	auth.ServiceId = endPoint.ServiceId
-	auth.Request.URL.Path = strings.Replace(path, auth.Service, "/"+endPoint.FixedPath+"/", 1)
+	auth.Request.URL.Path = strings.Replace(path, auth.ServiceMachineName, "/"+endPoint.FixedPath+"/", 1)
 	auth.Request.URL.Path = RefineUrl(auth.Request.URL.Path)
 	fmt.Println(auth.Request.URL.Path)
 	return nil

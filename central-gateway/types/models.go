@@ -36,6 +36,7 @@ type SystemLogInterface interface {
 	SetMessage(message string)
 	SetObject(object string)
 	GenerateLog() (SystemLogInterface, error)
+	GetSpecialUser() string
 }
 
 type SystemLog struct {
@@ -85,6 +86,9 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string) 
 						sl.Object = "PublicService"
 					}
 					found = true
+					if len(parts) == 1 {
+						sl.SpecialUser = "citizen"
+					}
 					continue
 				}
 			} else {
@@ -265,6 +269,9 @@ func (sl *SystemLog) SetObject(object string) {
 }
 func (sl *SystemLog) SetStatusCode(code int) {
 	sl.StatusCode = code
+}
+func (sl *SystemLog) GetSpecialUser() string {
+	return sl.SpecialUser
 }
 
 func isBaseModel(text string, secondLevel bool) (bool, string) {

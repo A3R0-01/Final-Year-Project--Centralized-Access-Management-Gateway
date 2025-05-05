@@ -25,16 +25,12 @@ func errorEncoder(ctx context.Context, err error, w http.ResponseWriter) {
 	switch err.Error() {
 	case "authentication failed":
 		w.WriteHeader(http.StatusUnauthorized)
-		break
 	case "service not found":
 		w.WriteHeader(http.StatusNotFound)
-		break
 	case "service error":
 		w.WriteHeader(http.StatusInternalServerError)
-		break
 	case "service unauthorized":
 		w.WriteHeader(http.StatusUnauthorized)
-		break
 	default:
 		break
 	}
@@ -77,55 +73,48 @@ func makeDecoderHttpServiceRequest(server *system.Server) httptransport.DecodeRe
 func makeEncoderHttpServiceResponse(server *system.Server) httptransport.EncodeResponseFunc {
 	return func(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 		auth := response.(*types.Authenticator)
-
-		previousFunc := auth.Proxy.ModifyResponse
-		auth.Proxy.ModifyResponse = func(resp *http.Response) error {
-			if previousFunc != nil {
-				if err := previousFunc(resp); err != nil {
+		user := auth.SystemLog.GetSpecialUser()
+		if !(user == "manager" || user == "admin" || user == "grantee") {
+			previousFunc := auth.Proxy.ModifyResponse
+			auth.Proxy.ModifyResponse = func(resp *http.Response) error {
+				if previousFunc != nil {
+					if err := previousFunc(resp); err != nil {
+						return err
+					}
+				}
+				contentType := resp.Header.Get("Content-Type")
+				// Only process text-based responses
+				if !(strings.HasPrefix(contentType, "text/") ||
+					strings.Contains(contentType, "html") ||
+					strings.Contains(contentType, "json") ||
+					strings.Contains(contentType, "javascript") ||
+					strings.Contains(contentType, "xml") ||
+					strings.Contains(contentType, "css")) {
+					return nil // Skip binary or irrelevant types (e.g., images, PDF, etc.)
+				}
+				// Read and close the original body
+				bodyBytes, err := io.ReadAll(resp.Body)
+				if err != nil {
 					return err
 				}
-			}
-
-			contentType := resp.Header.Get("Content-Type")
-
-			// Only process text-based responses
-			if !(strings.HasPrefix(contentType, "text/") ||
-				strings.Contains(contentType, "html") ||
-				strings.Contains(contentType, "json") ||
-				strings.Contains(contentType, "javascript") ||
-				strings.Contains(contentType, "xml") ||
-				strings.Contains(contentType, "css")) {
-				return nil // Skip binary or irrelevant types (e.g., images, PDF, etc.)
-			}
-
-			// Read and close the original body
-			bodyBytes, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return err
-			}
-			resp.Body.Close()
-
-			modifiedBody := string(bodyBytes)
-
-			// Replace all occurrences of internal service URLs with gateway paths
-			for _, endPoint := range server.EndPoints {
-				targetURL := endPoint.URL.Scheme + "://" + endPoint.URL.Host
-				if uri := endPoint.URL.RequestURI(); uri != "/" {
-					targetURL += uri
+				resp.Body.Close()
+				modifiedBody := string(bodyBytes)
+				// Replace all occurrences of internal service URLs with gateway paths
+				for _, endPoint := range server.EndPoints {
+					targetURL := endPoint.URL.Scheme + "://" + endPoint.URL.Host
+					if uri := endPoint.URL.RequestURI(); uri != "/" {
+						targetURL += uri
+					}
+					gatewayPath := "http://127.0.0.1:8020/" + endPoint.MachineName
+					modifiedBody = strings.ReplaceAll(modifiedBody, targetURL, gatewayPath)
 				}
-
-				gatewayPath := "http://127.0.0.1:8020/" + endPoint.MachineName
-				modifiedBody = strings.ReplaceAll(modifiedBody, targetURL, gatewayPath)
+				// Reset response body with modified content
+				resp.Body = io.NopCloser(bytes.NewBufferString(modifiedBody))
+				resp.ContentLength = int64(len(modifiedBody))
+				resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedBody)))
+				return nil
 			}
-
-			// Reset response body with modified content
-			resp.Body = io.NopCloser(bytes.NewBufferString(modifiedBody))
-			resp.ContentLength = int64(len(modifiedBody))
-			resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedBody)))
-
-			return nil
 		}
-
 		// Serve through proxy
 		auth.Proxy.ServeHTTP(w, auth.Request)
 		return nil
