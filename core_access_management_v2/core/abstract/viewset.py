@@ -78,7 +78,8 @@ class AbstractGranteeModelViewSet(AbstractModelViewSet):
         return obj
 
     def get_queryset(self) -> AbstractManager :
-        return self.serializer_class.Meta.model.objects.all()
+        queries = self.get_queries()
+        return self.serializer_class.Meta.model.objects.filter(**queries)
 
     def create(self, request, *args, **kwargs):
         pprint(request.data)

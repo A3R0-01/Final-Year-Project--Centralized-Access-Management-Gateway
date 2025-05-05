@@ -5,6 +5,7 @@ from .models import Citizen
 
 class CitizenSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source='PublicId', read_only=True, format='hex')
+    password = serializers.CharField(max_length=128, min_length=8, write_only=True, required=True)
     Created = serializers.DateTimeField(read_only=True)
     Updated = serializers.DateTimeField(read_only=True)
 
@@ -13,7 +14,7 @@ class CitizenSerializer(serializers.ModelSerializer):
     class Meta:
         model : Citizen = Citizen
         fields = [
-            'id', 'UserName', 'Email', 'FirstName', 'SecondName', 'Surname', 'DOB', 'NationalId','is_active',
+            'id', 'UserName', 'Email', 'FirstName', 'SecondName', 'Surname', 'DOB', 'NationalId', 'password','is_active',
             'Updated', 'Created',
         ]
         read_only_fields = [

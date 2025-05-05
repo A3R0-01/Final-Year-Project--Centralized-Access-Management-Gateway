@@ -1,10 +1,11 @@
 from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.exceptions import NotFound, PermissionDenied, server_error
+from rest_framework.exceptions import NotFound, PermissionDenied, server_error, MethodNotAllowed
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from core.abstract.viewset import AbstractSiteManagerModelViewSet, AbstractAdministratorModelViewSet, AbstractGranteeModelViewSet
 from .serializers import CitizenSerializer, GranteeCitizenModelSerializer, AdministratorCitizenModelSerializer, SiteManagerCitizenModelSerializer
 from .models import Citizen
+from pprint import pprint
 # Create your views here.
 
 class CitizenViewSet(ModelViewSet):
@@ -12,6 +13,11 @@ class CitizenViewSet(ModelViewSet):
     permission_classes = (IsAuthenticated,)
     http_method_names = ('get', 'patch')
 
+    def update(self, request, *args, **kwargs):
+        pprint(request.data)
+        obj = super().update(request, *args, **kwargs)
+        pprint(obj)
+        return obj
     def get_queryset(self):
         raise PermissionDenied()
 
@@ -24,6 +30,8 @@ class CitizenViewSet(ModelViewSet):
         except:
             server_error()
         return citizen
+    def create(self, request, *args, **kwargs):
+        raise MethodNotAllowed("This Endpoint Is not allowed")
 
 class GranteeCitizenModelViewSet(AbstractGranteeModelViewSet):
     http_method_names = ('get')
