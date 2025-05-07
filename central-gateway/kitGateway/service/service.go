@@ -1,6 +1,7 @@
 package service
 
 import (
+	"crypto/tls"
 	"fmt"
 	normalLog "log"
 
@@ -60,6 +61,19 @@ func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator
 
 func NewBasicService(endPoint *types.Endpoint) *BasicService {
 	proxy := httputil.NewSingleHostReverseProxy(endPoint.URL)
+	proxy.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	proxy.Director = func(r *http.Request) {
+		r.URL.Scheme = endPoint.URL.Scheme
+		r.URL.Host = endPoint.URL.Host
+		r.Host = endPoint.URL.Host
+		r.URL.Path = types.RefineUrl(endPoint.URL.Path + "/" + r.URL.Path)
+		if ua := r.Header.Get("User-Agent"); ua != "" {
+			r.Header.Set("User-Agent", ua)
+		}
+		// r.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+	}
 	return &BasicService{
 		Endpoint:           endPoint,
 		ServiceName:        endPoint.ServiceName,
