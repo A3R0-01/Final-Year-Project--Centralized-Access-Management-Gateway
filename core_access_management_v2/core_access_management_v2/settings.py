@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from celery.schedules import crontab
 import json
+from datetime import time
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -176,6 +177,7 @@ SYSTEM_LOG_KAFKA_SETTINGS = {
     "enable_auto_commit": True
 }
 CORS_ALLOW_ALL_ORIGINS = True
+DEFAULT_SESSION_TIME = 2 
 # CORS_ALLOWED_ORIGINS = [
 #     "http://localhost:3001",  # React/Next.js frontend
 #     "http://127.0.0.1:3001",
