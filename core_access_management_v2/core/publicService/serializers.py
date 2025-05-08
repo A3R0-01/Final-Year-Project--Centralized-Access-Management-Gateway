@@ -113,3 +113,15 @@ class PermissionPublicServiceSerializer(AbstractModelSerializer):
         read_only_fields : list[str] =  [
             'id','Title', "MachineName", 'URL'
         ]
+
+
+class ServiceSessionPublicServiceSerializer(AbstractModelSerializer):
+
+    class Meta:
+        model : PublicService = PublicService
+        fields : list[str] = [
+            'id','Title', "MachineName", 'URL'
+        ]
+        read_only_fields : list[str] =  [
+            'id','Title', "MachineName", 'URL'
+        ]
