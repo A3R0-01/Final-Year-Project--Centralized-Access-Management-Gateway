@@ -59,7 +59,8 @@ INSTALLED_APPS = [
     'core.grant',
     'core.servicePermissions',
     'core.systemLog',
-    'core.systemCron'
+    'core.systemCron',
+    'core.serviceSession'
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ( 'rest_framework_simplejwt.authentication.JWTAuthentication',),
