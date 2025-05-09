@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
+
+	server "github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/Server"
 )
 
 type Authenticator struct {
@@ -21,14 +23,14 @@ type Authenticator struct {
 	Proxy              *httputil.ReverseProxy
 }
 
-func (auth *Authenticator) PopulateAuthenticate(endpoints *MapEndPoint) error {
+func (auth *Authenticator) PopulateAuthenticate(endpoints *MapEndPoint, managerCredentials *server.ManagerLogInCredentials) error {
 	auth.Endpoints = endpoints
 	err := auth.UrlData(endpoints)
 	if err != nil {
 		return err
 	}
-
-	return auth.SystemLog.Populate(auth.Request, map[string]string{"service": auth.ServiceMachineName, "serviceId": auth.ServiceId})
+	serviceDetails := map[string]string{"service": auth.ServiceMachineName, "serviceId": auth.ServiceId}
+	return auth.SystemLog.Populate(auth.Request, serviceDetails, managerCredentials)
 }
 
 func (auth *Authenticator) VerifyService() error {

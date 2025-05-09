@@ -1,12 +1,15 @@
 package types
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strings"
+
+	server "github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/Server"
 )
 
 type PublicService struct {
@@ -27,6 +30,34 @@ func (s *PublicService) String() string {
 	return fmt.Sprint(s.Title + ": \tMachine Name: " + s.MachineName + "\tUrl: " + s.URL)
 }
 
+type ServiceSessionService struct {
+	PublicId    string `json:"id"`
+	Title       string `json:"Title"`
+	MachineName string `json:"MachineName"`
+	URL         string `json:"URL"`
+}
+
+type ServiceSessionCitizen struct {
+	PublicId   string `json:"id"`
+	UserName   string `json:"UserName"`
+	Email      string `json:"Email"`
+	FirstName  string `json:"FirstName"`
+	SecondName string `json:"SecondName"`
+	NationalId string `json:"NationalId"`
+}
+
+type ServiceSession struct {
+	PublicId      string                `json:"id"`
+	Citizen       ServiceSessionCitizen `json:"Citizen"`
+	Service       ServiceSessionService `json:"Service"`
+	EnforceExpiry bool                  `json:"EnforceExpiry"`
+	Expired       bool                  `json:"Expired"`
+}
+type ServiceSessionRequest struct {
+	PublicId string `json:"id"`
+	Citizen  string `json:"Citizen"`
+	Service  string `json:"Service"`
+}
 type SystemLogInterface interface {
 	Populate(request *http.Request, service map[string]string) error
 	getCitizen(authenticationHeader string) error
@@ -65,7 +96,7 @@ type GranteeSystemLog struct {
 	Grantee string `json:"Grantee"`
 }
 
-func (sl *SystemLog) Populate(request *http.Request, service map[string]string) error {
+func (sl *SystemLog) Populate(request *http.Request, service map[string]string, managerCredentials *server.ManagerLogInCredentials) error {
 	parts := strings.FieldsFunc(request.URL.Path, func(rw rune) bool {
 		return rw == '/'
 	})
@@ -136,7 +167,7 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string) 
 		if authenticationHeader == "" {
 			return fmt.Errorf("Not Authenticated")
 		}
-		err := sl.getCitizen(authenticationHeader)
+		err := sl.getCitizen(request, managerCredentials)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -153,7 +184,9 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string) 
 	return nil
 
 }
-func (sl *SystemLog) getCitizen(authenticationHeader string) error {
+func (sl *SystemLog) getCitizen(request *http.Request, managerCredentials *server.ManagerLogInCredentials) error {
+	authenticationHeader := request.Header.Get("Authorization")
+
 	req, err := http.NewRequest("GET", CentralDomain+"citizen/stuff", nil)
 	if err != nil {
 		return err
@@ -178,9 +211,14 @@ func (sl *SystemLog) getCitizen(authenticationHeader string) error {
 		return err
 	}
 	sl.Citizen = user.PublicId
-	return sl.VerifyService(authenticationHeader)
-
+	if sl.Object == "Service" {
+		if err := sl.CheckSessions(managerCredentials); err != nil {
+			return sl.VerifyService(authenticationHeader, managerCredentials)
+		}
+	}
+	return nil
 }
+
 func (sl *SystemLog) getSpecialUserId(authenticationHeader string) error {
 	req, err := http.NewRequest("GET", CentralDomain+sl.SpecialUser+"/"+sl.SpecialUser+"/stuff", nil)
 	if err != nil {
@@ -208,31 +246,83 @@ func (sl *SystemLog) getSpecialUserId(authenticationHeader string) error {
 	sl.SpecialUserId = user.PublicId
 	return nil
 }
-func (sl *SystemLog) VerifyService(authenticationHeader string) error {
-	if sl.Object == "Service" {
-		if sl.RecordId == "" {
-			return fmt.Errorf("service error")
-		}
-		fmt.Println("log: " + CentralDomain + "service/" + sl.RecordId)
-		req, err := http.NewRequest("GET", CentralDomain+"service/"+sl.RecordId, nil)
-		if err != nil {
-			return err
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", authenticationHeader)
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusNotFound {
-			return fmt.Errorf("service unauthorized")
-		} else if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("authentication failed")
-		}
-
+func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentials *server.ManagerLogInCredentials) error {
+	if sl.RecordId == "" {
+		return fmt.Errorf("service error")
+	}
+	fmt.Println("log: " + CentralDomain + "service/" + sl.RecordId)
+	req, err := http.NewRequest("GET", CentralDomain+"service/"+sl.RecordId, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authenticationHeader)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("service unauthorized")
+	} else if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("authentication failed")
+	}
+	session := ServiceSessionRequest{
+		Citizen: sl.Citizen,
+		Service: sl.RecordId,
+	}
+	sessionJson, err := json.Marshal(session)
+	if err != nil {
+		return fmt.Errorf("Failed to create Session: 0")
+	}
+	sessionReq, err := http.NewRequest("POST", CentralDomain+"manager/session/", bytes.NewBuffer(sessionJson))
+	if err != nil {
+		return fmt.Errorf("Failed to create Session: 1")
+	}
+	sessionReq.Header.Set("Content-Type", "application/json")
+	sessionReq.Header.Set("Authorization", managerCredentials.Access)
+	resp, err = http.DefaultClient.Do(sessionReq)
+	if err != nil {
+		return fmt.Errorf("Failed To Create Session: 2")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("service unauthorized")
 	}
 	return nil
+}
+
+func (sl *SystemLog) CheckSessions(managerCredentials *server.ManagerLogInCredentials) error {
+	sessionReq, err := http.NewRequest("GET", CentralDomain+"manager/session/?Service="+sl.RecordId+"&Citizen="+sl.Citizen, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to GET Session: 1")
+	}
+	sessionReq.Header.Set("Content-Type", "application/json")
+	sessionReq.Header.Set("Authorization", managerCredentials.Access)
+	resp, err := http.DefaultClient.Do(sessionReq)
+	if err != nil {
+		return fmt.Errorf("Failed To GET Session: 2")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("service unauthorized")
+	}
+	var respContainer []ServiceSession
+	if err := json.NewDecoder(resp.Body).Decode(&respContainer); err != nil {
+		log.Fatal("Credentials Decoding failed: CheckSession", err)
+		return fmt.Errorf("Credentials Decoding failed: CheckSession")
+	}
+	found := false
+	for _, serviceSession := range respContainer {
+		if serviceSession.Expired {
+			continue
+		}
+		found = true
+	}
+	if found {
+		return nil
+	}
+	return fmt.Errorf("Failed to Find Active Session")
 }
 func (sl *SystemLog) GenerateLog() (SystemLogInterface, error) {
 	if sl.SpecialUser == "citizen" {
