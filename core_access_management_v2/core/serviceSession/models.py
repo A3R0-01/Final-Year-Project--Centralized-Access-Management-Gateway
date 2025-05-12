@@ -11,6 +11,7 @@ class ServiceSessionManager(AbstractManager):
 class ServiceSession(AbstractModel):
     Citizen = models.ForeignKey(to='citizen.Citizen', on_delete=models.PROTECT)
     Service = models.ForeignKey(to='publicService.PublicService', on_delete=models.DO_NOTHING)
+    IpAddress = models.CharField(max_length=19)
     EnforceExpiry = models.BooleanField(default=False)
 
     objects : ServiceSessionManager = ServiceSessionManager()

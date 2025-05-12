@@ -23,10 +23,10 @@ class GranteeServiceSessionSerializer(AbstractModelSerializer):
     class Meta:
         model : ServiceSession = ServiceSession
         fields : list[str] = [
-            'id', 'Citizen', 'Service', 'EnforceExpiry', 'Expired', 'Created', 'Updated'
+            'id', 'Citizen', 'Service', "IpAddress", 'EnforceExpiry', 'Expired', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id', 'Citizen', 'Service', 'EnforceExpiry', 'Expired', 'Created', 'Updated'
+            'id', 'Citizen', 'Service', "IpAddress", 'EnforceExpiry', 'Expired', 'Created', 'Updated'
         ]
 
 class AdministratorServiceSessionSerializer(GranteeServiceSessionSerializer):
@@ -34,10 +34,10 @@ class AdministratorServiceSessionSerializer(GranteeServiceSessionSerializer):
     class Meta:
         model : ServiceSession = ServiceSession
         fields : list[str] = [
-            'id', 'Citizen', 'Service', 'EnforceExpiry', 'Expired', 'Created', 'Updated'
+            'id', 'Citizen', 'Service', "IpAddress", 'EnforceExpiry', 'Expired', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id', 'Citizen', 'Service', 'EnforceExpiry', 'Expired', 'Created', 'Updated'
+            'id', 'Citizen', 'Service', "IpAddress", 'EnforceExpiry', 'Expired', 'Created', 'Updated'
         ]
 
 class SiteManagerServiceSessionSerializer(GranteeServiceSessionSerializer):
@@ -45,8 +45,8 @@ class SiteManagerServiceSessionSerializer(GranteeServiceSessionSerializer):
     class Meta:
         model : ServiceSession = ServiceSession
         fields : list[str] = [
-            'id', 'Citizen', 'Service', 'EnforceExpiry', 'Expired', 'Created', 'Updated'
+            'id', 'Citizen', 'Service', "IpAddress", 'EnforceExpiry', 'Expired', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id', 'Created', 'Expired', 'Updated'
+            'id', 'Created', 'Expired', "IpAddress", 'Updated'
         ]
