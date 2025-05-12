@@ -61,8 +61,10 @@ type ServiceSessionRequest struct {
 	IpAddress string `json:"IpAddress"`
 }
 type SystemLogInterface interface {
-	Populate(request *http.Request, service map[string]string) error
-	getCitizen(authenticationHeader string) error
+	Populate(request *http.Request, service map[string]string, managerCredentials *server.ManagerLogInCredentials) error
+	getCitizen(request *http.Request, managerCredentials *server.ManagerLogInCredentials) error
+	CheckSessions(managerCredentials *server.ManagerLogInCredentials) error
+	VerifyService(authenticationHeader string, managerCredentials *server.ManagerLogInCredentials) error
 	getSpecialUserId(authenticationHeader string) error
 	SetStatusCode(statusCode int)
 	SetRecordId(id string)
@@ -100,7 +102,7 @@ type GranteeSystemLog struct {
 }
 
 func (sl *SystemLog) Populate(request *http.Request, service map[string]string, managerCredentials *server.ManagerLogInCredentials) error {
-	sl.IpAddress = "unknown"
+	sl.IpAddress = verify.GetIP(request)
 	parts := strings.FieldsFunc(request.URL.Path, func(rw rune) bool {
 		return rw == '/'
 	})
@@ -216,7 +218,6 @@ func (sl *SystemLog) getCitizen(request *http.Request, managerCredentials *serve
 	}
 	sl.Citizen = user.PublicId
 	if sl.Object == "Service" {
-		sl.IpAddress = verify.GetIP(request)
 		if err := sl.CheckSessions(managerCredentials); err != nil {
 			return sl.VerifyService(authenticationHeader, managerCredentials)
 		}
