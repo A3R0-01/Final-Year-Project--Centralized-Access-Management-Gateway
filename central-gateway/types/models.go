@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	server "github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/Server"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
 )
 
 type PublicService struct {
@@ -50,13 +51,14 @@ type ServiceSession struct {
 	PublicId      string                `json:"id"`
 	Citizen       ServiceSessionCitizen `json:"Citizen"`
 	Service       ServiceSessionService `json:"Service"`
+	IpAddress     string                `json:"IpAddress"`
 	EnforceExpiry bool                  `json:"EnforceExpiry"`
 	Expired       bool                  `json:"Expired"`
 }
 type ServiceSessionRequest struct {
-	PublicId string `json:"id"`
-	Citizen  string `json:"Citizen"`
-	Service  string `json:"Service"`
+	Citizen   string `json:"Citizen"`
+	Service   string `json:"Service"`
+	IpAddress string `json:"IpAddress"`
 }
 type SystemLogInterface interface {
 	Populate(request *http.Request, service map[string]string) error
@@ -77,6 +79,7 @@ type SystemLog struct {
 	RecordId      string `json:"RecordId"`
 	StatusCode    int    `json:"StatusCode"`
 	Message       string `json:"Message"`
+	IpAddress     string `json:"IpAddress"`
 	SpecialUser   string
 	SpecialUserId string
 }
@@ -97,6 +100,7 @@ type GranteeSystemLog struct {
 }
 
 func (sl *SystemLog) Populate(request *http.Request, service map[string]string, managerCredentials *server.ManagerLogInCredentials) error {
+	sl.IpAddress = "unknown"
 	parts := strings.FieldsFunc(request.URL.Path, func(rw rune) bool {
 		return rw == '/'
 	})
@@ -212,6 +216,7 @@ func (sl *SystemLog) getCitizen(request *http.Request, managerCredentials *serve
 	}
 	sl.Citizen = user.PublicId
 	if sl.Object == "Service" {
+		sl.IpAddress = verify.GetIP(request)
 		if err := sl.CheckSessions(managerCredentials); err != nil {
 			return sl.VerifyService(authenticationHeader, managerCredentials)
 		}
@@ -268,8 +273,9 @@ func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentia
 		return fmt.Errorf("authentication failed")
 	}
 	session := ServiceSessionRequest{
-		Citizen: sl.Citizen,
-		Service: sl.RecordId,
+		Citizen:   sl.Citizen,
+		Service:   sl.RecordId,
+		IpAddress: sl.IpAddress,
 	}
 	sessionJson, err := json.Marshal(session)
 	if err != nil {
@@ -293,7 +299,10 @@ func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentia
 }
 
 func (sl *SystemLog) CheckSessions(managerCredentials *server.ManagerLogInCredentials) error {
-	sessionReq, err := http.NewRequest("GET", CentralDomain+"manager/session/?Service="+sl.RecordId+"&Citizen="+sl.Citizen, nil)
+	if sl.IpAddress == "unknown" || sl.IpAddress == "" {
+		return fmt.Errorf("Authentication Failed")
+	}
+	sessionReq, err := http.NewRequest("GET", CentralDomain+"manager/session/?Service="+sl.RecordId+"&Citizen="+sl.Citizen+"&IpAddress="+sl.IpAddress, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to GET Session: 1")
 	}
