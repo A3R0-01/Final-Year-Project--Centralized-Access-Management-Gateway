@@ -48,5 +48,5 @@ class SiteManagerServiceSessionSerializer(GranteeServiceSessionSerializer):
             'id', 'Citizen', 'Service', "IpAddress", 'EnforceExpiry', 'Expired', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
-            'id', 'Created', 'Expired', "IpAddress", 'Updated'
+            'id', 'Created', 'Expired', 'Updated'
         ]
