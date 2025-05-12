@@ -13,7 +13,7 @@ class SiteManagerLogSerializer(AbstractLogSerializer):
     class Meta:
         model : SiteManagerLog = SiteManagerLog
         fields : list[str] = [
-            'id','Citizen', 'SiteManager', 'Method', 'Object', 'RecordId', 'Message', 'Created', 'Updated'
+            'id','Citizen', 'IpAddress', 'SiteManager', 'Method', 'Object', 'RecordId', 'Message', 'Created', 'Updated'
 
         ]
 
@@ -23,7 +23,7 @@ class AdministratorLogSerializer(AbstractLogSerializer):
     class Meta:
         model : AdministratorLog = AdministratorLog
         fields : list[str] = [
-            'id','Citizen', 'Administrator', 'Method', 'Object', 'RecordId', 'Message', 'Created', 'Updated'
+            'id','Citizen', 'IpAddress', 'Administrator', 'Method', 'Object', 'RecordId', 'Message', 'Created', 'Updated'
 
         ]
 
@@ -33,7 +33,7 @@ class GranteeLogSerializer(AbstractLogSerializer):
     class Meta:
         model : GranteeLog = GranteeLog
         fields : list[str] = [
-            'id','Citizen', 'Grantee', 'Method', 'Object', 'RecordId', 'Message', 'Created', 'Updated'
+            'id','Citizen', 'IpAddress', 'Grantee', 'Method', 'Object', 'RecordId', 'Message', 'Created', 'Updated'
 
         ]
 
@@ -43,6 +43,6 @@ class CitizenLogSerializer(AbstractLogSerializer):
     class Meta:
         model : CitizenLog = CitizenLog
         fields : list[str] = [
-            'id','Citizen', 'Method', 'Object', 'RecordId', 'Message', 'Created', 'Updated'
+            'id','Citizen', 'IpAddress', 'Method', 'Object', 'RecordId', 'Message', 'Created', 'Updated'
 
         ]
