@@ -9,14 +9,13 @@ import (
 	"net/http/httputil"
 
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
-	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
 )
 
 type Server struct {
 	id          string
 	EndPoints   types.MapEndPoint
 	Proxies     map[string]*httputil.ReverseProxy
-	Credentials ManagerLogInCredentials
+	Credentials types.ManagerLogInCredentials
 }
 
 func (srv *Server) FetchServices() *[]types.PublicService {
@@ -57,7 +56,7 @@ func (srv *Server) GenerateEndPoints() {
 		}
 		endPoints[service.MachineName] = endpoint
 	}
-	if err := verify.VerifyMachineNames(endPoints); err != nil {
+	if err := VerifyMachineNames(endPoints); err != nil {
 		log.Fatal("Duplicate ServicesNames ")
 	}
 	srv.EndPoints = endPoints
@@ -114,7 +113,7 @@ func (srv *Server) HandleServe(auth *types.Authenticator, code *int) {
 func (srv *Server) Serve(w http.ResponseWriter, r *http.Request) {
 	var code int = 0
 	authenticator := types.NewAuthenticator(r)
-	if err := authenticator.PopulateAuthenticate(&srv.EndPoints); err != nil {
+	if err := authenticator.PopulateAuthenticate(&srv.EndPoints, &srv.Credentials); err != nil {
 		log.Println(err)
 		return
 	}

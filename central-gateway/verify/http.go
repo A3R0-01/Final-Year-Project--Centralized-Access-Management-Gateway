@@ -5,8 +5,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-
-	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
 )
 
 var (
@@ -28,18 +26,18 @@ func VerifyMethods(methods []string) error {
 	return nil
 }
 
-func VerifyMachineNames(endpoints map[string]*types.Endpoint) error {
-	for key, endpoint := range endpoints {
-		for secondKey, duplicate := range endpoints {
-			if key != secondKey {
-				if strings.ToLower(endpoint.MachineName) == strings.ToLower(duplicate.MachineName) {
-					return fmt.Errorf("duplicate services")
-				}
-			}
-		}
-	}
-	return nil
-}
+// func VerifyMachineNames(endpoints map[string]*types.Endpoint) error {
+// 	for key, endpoint := range endpoints {
+// 		for secondKey, duplicate := range endpoints {
+// 			if key != secondKey {
+// 				if strings.ToLower(endpoint.MachineName) == strings.ToLower(duplicate.MachineName) {
+// 					return fmt.Errorf("duplicate services")
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 func GetIP(r *http.Request) string {
 	// Check for X-Forwarded-For header first (standard for proxies)

@@ -27,8 +27,8 @@ func NewEndpoint(serviceName string, machineName string, fixedPath string, servi
 
 }
 
-func generateManagerCredentials() *ManagerLogInCredentials {
-	return &ManagerLogInCredentials{
+func generateManagerCredentials() *types.ManagerLogInCredentials {
+	return &types.ManagerLogInCredentials{
 		ManagerUserName: "A3R0",
 		ManagerPassword: "bsrvnttngjltzl",
 		Email:           "erlsontmadara@gmail.com",

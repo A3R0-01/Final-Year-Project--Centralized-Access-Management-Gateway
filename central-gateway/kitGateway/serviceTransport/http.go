@@ -84,12 +84,7 @@ func makeEncoderHttpServiceResponse(server *system.Server) httptransport.EncodeR
 				}
 				contentType := resp.Header.Get("Content-Type")
 				// Only process text-based responses
-				if !(strings.HasPrefix(contentType, "text/") ||
-					strings.Contains(contentType, "html") ||
-					strings.Contains(contentType, "json") ||
-					strings.Contains(contentType, "javascript") ||
-					strings.Contains(contentType, "xml") ||
-					strings.Contains(contentType, "css")) {
+				if !(strings.Contains(contentType, "application/json")) {
 					return nil // Skip binary or irrelevant types (e.g., images, PDF, etc.)
 				}
 				// Read and close the original body

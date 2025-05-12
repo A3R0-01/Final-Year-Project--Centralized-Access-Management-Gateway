@@ -15,7 +15,7 @@ import (
 type Server struct {
 	id          string
 	EndPoints   types.MapEndPoint
-	Credentials server.ManagerLogInCredentials
+	Credentials types.ManagerLogInCredentials
 }
 
 func (srv *Server) FetchServices() *[]types.PublicService {
@@ -56,7 +56,7 @@ func (srv *Server) GenerateEndPoints() {
 		}
 		endPoints[service.MachineName] = endpoint
 	}
-	if err := verify.VerifyMachineNames(endPoints); err != nil {
+	if err := server.VerifyMachineNames(endPoints); err != nil {
 		log.Fatal("Duplicate ServicesNames ")
 	}
 	srv.EndPoints = endPoints
@@ -100,8 +100,8 @@ func NewEndpoint(serviceName string, machineName string, fixedPath string, servi
 	}, nil
 
 }
-func generateManagerCredentials() *server.ManagerLogInCredentials {
-	return &server.ManagerLogInCredentials{
+func generateManagerCredentials() *types.ManagerLogInCredentials {
+	return &types.ManagerLogInCredentials{
 		ManagerUserName: "A3R0",
 		ManagerPassword: "bsrvnttngjltzl",
 		Email:           "erlsontmadara@gmail.com",
