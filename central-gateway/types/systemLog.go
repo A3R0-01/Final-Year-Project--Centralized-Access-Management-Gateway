@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
 )
@@ -125,11 +126,19 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string, 
 		authenticationHeader := request.Header.Get("Authorization")
 		if sl.Object == "Service" {
 			if err := sl.CheckSessions(managerCredentials); err != nil {
+				log.Println("There was an error:\n" + err.Error())
 				err := sl.getCitizen(request, managerCredentials)
 				if err != nil {
 					log.Println(err)
 					return err
 				}
+			}
+		} else {
+			log.Println("not service")
+			err := sl.getCitizen(request, managerCredentials)
+			if err != nil {
+				log.Println(err)
+				return err
 			}
 		}
 
@@ -152,7 +161,7 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string, 
 func (sl *SystemLog) getCitizen(request *http.Request, managerCredentials *ManagerLogInCredentials) error {
 	authenticationHeader := request.Header.Get("Authorization")
 
-	req, err := http.NewRequest("GET", CentralDomain+"citizen/stuff", nil)
+	req, err := http.NewRequest("GET", CentralDomain+"citizen/stuff/", nil)
 	if err != nil {
 		return err
 	}
@@ -214,7 +223,7 @@ func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentia
 		return fmt.Errorf("service error")
 	}
 	fmt.Println("log: " + CentralDomain + "service/" + sl.RecordId)
-	req, err := http.NewRequest("GET", CentralDomain+"service/"+sl.RecordId, nil)
+	req, err := http.NewRequest("GET", CentralDomain+"service/"+sl.RecordId+"/", nil)
 	if err != nil {
 		return err
 	}
@@ -247,10 +256,13 @@ func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentia
 	sessionReq.Header.Set("Authorization", "Bearer "+managerCredentials.Access)
 	resp, err = http.DefaultClient.Do(sessionReq)
 	if err != nil {
+		log.Println("Failed To Create Session: 2")
 		return fmt.Errorf("Failed To Create Session: 2")
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	_, _ = io.Copy(io.Discard, resp.Body) // important!
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		log.Println("Failed To Create Session: 2 service unauthorised: " + managerCredentials.Access)
 		return fmt.Errorf("service unauthorized")
 	}
 	return nil
@@ -271,12 +283,14 @@ func (sl *SystemLog) CheckSessions(managerCredentials *ManagerLogInCredentials) 
 		return fmt.Errorf("Failed To GET Session: 2")
 	}
 	defer resp.Body.Close()
+	time.Sleep(10 * time.Millisecond)
+	// _, _ = io.Copy(io.Discard, resp.Body) // important!
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("service unauthorized")
 	}
 	var respContainer []ServiceSession
 	if err := json.NewDecoder(resp.Body).Decode(&respContainer); err != nil {
-		log.Fatal("Credentials Decoding failed: CheckSession", err)
+		log.Println("Credentials Decoding failed: CheckSession", err)
 		return fmt.Errorf("Credentials Decoding failed: CheckSession")
 	}
 	found := false

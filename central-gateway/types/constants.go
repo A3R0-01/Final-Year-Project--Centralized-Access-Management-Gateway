@@ -1,6 +1,7 @@
 package types
 
 var (
+	GatewayDomain                = "http://127.0.0.1:8020/"
 	CentralDomain                = "http://127.0.0.1:8000/api/"
 	LoginEndpoint                = CentralDomain + "manager/login/"
 	RefreshEndpoint              = CentralDomain + "auth/refresh/"

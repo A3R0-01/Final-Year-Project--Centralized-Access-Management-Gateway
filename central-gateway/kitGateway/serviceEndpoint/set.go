@@ -25,7 +25,7 @@ func New(service service.Service, logger log.Logger, duration metrics.Histogram)
 	var serviceEndpoint endpoint.Endpoint
 	{
 		serviceEndpoint = MakeServiceEndpoint(service)
-		serviceEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), 3))(serviceEndpoint)
+		serviceEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), 20))(serviceEndpoint)
 		serviceEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{}))(serviceEndpoint)
 		serviceEndpoint = LoggingMiddleware(log.With(logger, "method", service.GetServiceName()))(serviceEndpoint)
 		serviceEndpoint = InstrumentingMiddleware(duration.With("method", service.GetServiceName()))(serviceEndpoint)

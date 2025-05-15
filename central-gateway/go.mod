@@ -5,6 +5,7 @@ go 1.24.2
 require golang.org/x/time v0.5.0
 
 require (
+	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/smartystreets/goconvey v1.8.1 // indirect
 )

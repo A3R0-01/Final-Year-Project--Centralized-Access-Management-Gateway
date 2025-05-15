@@ -1,15 +1,11 @@
 package serviceTransport
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	normalLog "log"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/serviceEndpoint"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/system"
@@ -73,43 +69,43 @@ func makeDecoderHttpServiceRequest(server *system.Server) httptransport.DecodeRe
 func makeEncoderHttpServiceResponse(server *system.Server) httptransport.EncodeResponseFunc {
 	return func(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 		auth := response.(*types.Authenticator)
-		user := auth.SystemLog.GetSpecialUser()
-		if !(user == "manager" || user == "admin" || user == "grantee") {
-			previousFunc := auth.Proxy.ModifyResponse
-			auth.Proxy.ModifyResponse = func(resp *http.Response) error {
-				if previousFunc != nil {
-					if err := previousFunc(resp); err != nil {
-						return err
-					}
-				}
-				contentType := resp.Header.Get("Content-Type")
-				// Only process text-based responses
-				if !(strings.Contains(contentType, "application/json")) {
-					return nil // Skip binary or irrelevant types (e.g., images, PDF, etc.)
-				}
-				// Read and close the original body
-				bodyBytes, err := io.ReadAll(resp.Body)
-				if err != nil {
-					return err
-				}
-				resp.Body.Close()
-				modifiedBody := string(bodyBytes)
-				// Replace all occurrences of internal service URLs with gateway paths
-				for _, endPoint := range server.EndPoints {
-					targetURL := endPoint.URL.Scheme + "://" + endPoint.URL.Host
-					if uri := endPoint.URL.RequestURI(); uri != "/" {
-						targetURL += uri
-					}
-					gatewayPath := "http://127.0.0.1:8020/" + endPoint.MachineName
-					modifiedBody = strings.ReplaceAll(modifiedBody, targetURL, gatewayPath)
-				}
-				// Reset response body with modified content
-				resp.Body = io.NopCloser(bytes.NewBufferString(modifiedBody))
-				resp.ContentLength = int64(len(modifiedBody))
-				resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedBody)))
-				return nil
-			}
-		}
+		// user := auth.SystemLog.GetSpecialUser()
+		// if !(user == "manager" || user == "admin" || user == "grantee") {
+		// 	previousFunc := auth.Proxy.ModifyResponse
+		// 	auth.Proxy.ModifyResponse = func(resp *http.Response) error {
+		// 		if previousFunc != nil {
+		// 			if err := previousFunc(resp); err != nil {
+		// 				return err
+		// 			}
+		// 		}
+		// 		contentType := resp.Header.Get("Content-Type")
+		// 		// Only process text-based responses
+		// 		if !(strings.Contains(contentType, "application/json")) {
+		// 			return nil // Skip binary or irrelevant types (e.g., images, PDF, etc.)
+		// 		}
+		// 		// Read and close the original body
+		// 		bodyBytes, err := io.ReadAll(resp.Body)
+		// 		if err != nil {
+		// 			return err
+		// 		}
+		// 		resp.Body.Close()
+		// 		modifiedBody := string(bodyBytes)
+		// 		// Replace all occurrences of internal service URLs with gateway paths
+		// 		for _, endPoint := range server.EndPoints {
+		// 			targetURL := endPoint.URL.Scheme + "://" + endPoint.URL.Host
+		// 			if uri := endPoint.URL.RequestURI(); uri != "/" {
+		// 				targetURL += uri
+		// 			}
+		// 			gatewayPath := "http://127.0.0.1:8020/" + endPoint.MachineName
+		// 			modifiedBody = strings.ReplaceAll(modifiedBody, targetURL, gatewayPath)
+		// 		}
+		// 		// Reset response body with modified content
+		// 		resp.Body = io.NopCloser(bytes.NewBufferString(modifiedBody))
+		// 		resp.ContentLength = int64(len(modifiedBody))
+		// 		resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedBody)))
+		// 		return nil
+		// 	}
+		// }
 		// Serve through proxy
 		auth.Proxy.ServeHTTP(w, auth.Request)
 		return nil
