@@ -56,14 +56,13 @@ type GranteeSystemLog struct {
 
 func (sl *SystemLog) Populate(request *http.Request, service map[string]string, managerCredentials *ManagerLogInCredentials) error {
 	sl.IpAddress = verify.GetIP(request)
-	log.Println("Ip Address")
 	parts := strings.FieldsFunc(request.URL.Path, func(rw rune) bool {
 		return rw == '/'
 	})
 	var secondary bool = false
 	var found = false
 	var baseModel string
-	sl.RecordId = ""
+	sl.RecordId = "n/a"
 	if service["service"] == "c_a_m" {
 		for key, routeComponent := range parts {
 			if !found {
@@ -118,10 +117,6 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string, 
 		sl.Message = "Accessed Service: " + service["service"]
 	}
 
-	fmt.Println(sl.Object)
-	fmt.Println(sl.Method)
-	fmt.Println(sl.SpecialUser)
-	fmt.Println(sl.RecordId)
 	if !isExemptModel(strings.ToLower(sl.Object)) {
 		authenticationHeader := request.Header.Get("Authorization")
 		if sl.Object == "Service" {
@@ -134,7 +129,6 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string, 
 				}
 			}
 		} else {
-			log.Println("not service")
 			err := sl.getCitizen(request, managerCredentials)
 			if err != nil {
 				log.Println(err)
@@ -146,15 +140,20 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string, 
 		// 	return fmt.Errorf("Not Authenticated")
 		// }
 
-		fmt.Println(sl.Citizen)
+		// fmt.Println(sl.Citizen)
 		if sl.SpecialUser != "citizen" {
 			if err := sl.getSpecialUserId(authenticationHeader); err != nil {
 				log.Println("Failed To get special user")
 				return err
 			}
 		}
-		return nil
+
 	}
+	fmt.Println("object: ", sl.Object)
+	fmt.Println("Method: ", sl.Method)
+	fmt.Println("User: ", sl.SpecialUser)
+	fmt.Println("Id: ", sl.RecordId)
+	fmt.Println("Citizen: ", sl.Citizen)
 	return nil
 
 }
@@ -222,7 +221,7 @@ func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentia
 	if sl.RecordId == "" {
 		return fmt.Errorf("service error")
 	}
-	fmt.Println("log: " + CentralDomain + "service/" + sl.RecordId)
+	// fmt.Println("log: " + CentralDomain + "service/" + sl.RecordId)
 	req, err := http.NewRequest("GET", CentralDomain+"service/"+sl.RecordId+"/", nil)
 	if err != nil {
 		return err

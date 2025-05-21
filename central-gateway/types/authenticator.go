@@ -50,7 +50,6 @@ func (auth *Authenticator) UrlData(endpoints *MapEndPoint) error {
 	auth.ServiceId = endPoint.ServiceId
 	auth.Request.URL.Path = strings.Replace(path, auth.ServiceMachineName, "/"+endPoint.FixedPath+"/", 1)
 	auth.Request.URL.Path = RefineUrl(auth.Request.URL.Path)
-	fmt.Println(auth.Request.URL.Path)
 	return nil
 }
 func (auth *Authenticator) GetServiceName(r string) string {
