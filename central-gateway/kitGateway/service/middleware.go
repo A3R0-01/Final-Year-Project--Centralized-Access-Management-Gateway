@@ -1,8 +1,10 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httputil"
 	"time"
 
@@ -25,9 +27,10 @@ type LoggingMiddleware struct {
 	ServiceId          string
 	next               Service
 	Proxy              *httputil.ReverseProxy
+	Credentials        *types.ManagerLogInCredentials
 }
 
-func NewLoggingMiddleware(logger log.Logger, producer *kafka.Producer) Middleware {
+func NewLoggingMiddleware(logger log.Logger, producer *kafka.Producer, credentials *types.ManagerLogInCredentials) Middleware {
 	return func(service Service) Service {
 		return &LoggingMiddleware{
 			log:                logger,
@@ -36,6 +39,7 @@ func NewLoggingMiddleware(logger log.Logger, producer *kafka.Producer) Middlewar
 			ServiceMachineName: service.GetServiceMachineName(),
 			ServiceId:          service.GetServiceId(),
 			Proxy:              service.GetProxy(),
+			Credentials:        credentials,
 			next:               service,
 		}
 	}
@@ -48,16 +52,28 @@ func (md *LoggingMiddleware) LogData(auth *types.Authenticator) error {
 	}
 	jsonLog, err := json.Marshal(logOutput)
 	if err != nil {
-		return fmt.Errorf("Failed to marshal log data")
+		return fmt.Errorf("failed to marshal log data")
 	}
-	err = md.producer.Produce(
-		&kafka.Message{
-			TopicPartition: kafka.TopicPartition{Topic: &types.KafkaLoggerTopic, Partition: kafka.PartitionAny},
-			Value:          jsonLog},
-		nil,
-	)
+	fmt.Println(logOutput)
+	req, err := http.NewRequest("POST", types.CentralDomain+"manager/log/manager/", bytes.NewBuffer(jsonLog))
 	if err != nil {
-		return fmt.Errorf("Failed to push data to kafka")
+		return fmt.Errorf("failed create the request to push the log")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+md.Credentials.Access)
+	// err = md.producer.Produce(
+	// 	&kafka.Message{
+	// 		TopicPartition: kafka.TopicPartition{Topic: &types.KafkaLoggerTopic, Partition: kafka.PartitionAny},
+	// 		Value:          jsonLog},
+	// 	nil,
+	// )
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to push data to central access management")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to push log: server side")
 	}
 	return nil
 

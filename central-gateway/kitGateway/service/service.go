@@ -83,7 +83,6 @@ func NewBasicService(endPoint *types.Endpoint) *BasicService {
 		if ua := r.Header.Get("User-Agent"); ua != "" {
 			r.Header.Set("User-Agent", ua)
 		}
-		// r.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
 	}
 	proxy.ModifyResponse = func(resp *http.Response) error {
 		contentType := resp.Header.Get("Content-Type")
@@ -171,7 +170,7 @@ func New(logger log.Logger, server *system.Server, globalMetricsHolder *types.Gl
 	for _, endP := range server.EndPoints {
 		{
 			basicService := NewBasicService(endP)
-			service := NewLoggingMiddleware(logger, producer)(basicService)
+			service := NewLoggingMiddleware(logger, producer, &server.Credentials)(basicService)
 			service = NewInstrumentingMiddleware(globalMetricsHolder)(service)
 			services = append(services, service)
 		}
