@@ -77,3 +77,23 @@ func GetIP(r *http.Request) string {
 
 	return "unknown"
 }
+
+func NormalizeIP(ipStr string) string {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return ipStr // Invalid IP, return as-is
+	}
+
+	// Convert IPv6 loopback (::1) to IPv4 loopback
+	if ip.IsLoopback() && ip.To4() == nil {
+		return "127.0.0.1"
+	}
+
+	// Convert IPv6-mapped IPv4 (::ffff:x.x.x.x) to x.x.x.x
+	if ip4 := ip.To4(); ip4 != nil {
+		return ip4.String()
+	}
+
+	// Return the normalized IPv6 string
+	return ip.String()
+}

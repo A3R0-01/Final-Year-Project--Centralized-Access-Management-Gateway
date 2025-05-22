@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
 )
@@ -55,7 +54,7 @@ type GranteeSystemLog struct {
 }
 
 func (sl *SystemLog) Populate(request *http.Request, service map[string]string, managerCredentials *ManagerLogInCredentials) error {
-	sl.IpAddress = verify.GetIP(request)
+	sl.IpAddress = verify.NormalizeIP(verify.GetIP(request))
 	parts := strings.FieldsFunc(request.URL.Path, func(rw rune) bool {
 		return rw == '/'
 	})
@@ -221,6 +220,13 @@ func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentia
 	if sl.RecordId == "" {
 		return fmt.Errorf("service error")
 	}
+
+	session := ServiceSessionRequest{
+		Citizen:   sl.Citizen,
+		Service:   sl.RecordId,
+		IpAddress: sl.IpAddress,
+	}
+	fmt.Println(session)
 	// fmt.Println("log: " + CentralDomain + "service/" + sl.RecordId)
 	req, err := http.NewRequest("GET", CentralDomain+"service/"+sl.RecordId+"/", nil)
 	if err != nil {
@@ -237,11 +243,6 @@ func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentia
 		return fmt.Errorf("service unauthorized")
 	} else if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("authentication failed")
-	}
-	session := ServiceSessionRequest{
-		Citizen:   sl.Citizen,
-		Service:   sl.RecordId,
-		IpAddress: sl.IpAddress,
 	}
 	sessionJson, err := json.Marshal(session)
 	if err != nil {
@@ -271,26 +272,27 @@ func (sl *SystemLog) CheckSessions(managerCredentials *ManagerLogInCredentials) 
 	if sl.IpAddress == "unknown" || sl.IpAddress == "" {
 		return fmt.Errorf("Authentication Failed")
 	}
+	fmt.Println("IpAddress: ", sl.IpAddress, "Service: "+sl.RecordId)
 	sessionReq, err := http.NewRequest("GET", CentralDomain+"manager/session/?Service__PublicId="+sl.RecordId+"&IpAddress="+sl.IpAddress, nil)
 	if err != nil {
-		return fmt.Errorf("Failed to GET Session: 1")
+		return fmt.Errorf("failed to get session: 1")
 	}
 	sessionReq.Header.Set("Content-Type", "application/json")
 	sessionReq.Header.Set("Authorization", "Bearer "+managerCredentials.Access)
 	resp, err := http.DefaultClient.Do(sessionReq)
 	if err != nil {
-		return fmt.Errorf("Failed To GET Session: 2")
+		return fmt.Errorf("failed to get session: 2")
 	}
 	defer resp.Body.Close()
-	time.Sleep(10 * time.Millisecond)
 	// _, _ = io.Copy(io.Discard, resp.Body) // important!
+	fmt.Println("Bearer: ", "Bearer "+managerCredentials.Access)
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("service unauthorized")
 	}
 	var respContainer []ServiceSession
 	if err := json.NewDecoder(resp.Body).Decode(&respContainer); err != nil {
-		log.Println("Credentials Decoding failed: CheckSession", err)
-		return fmt.Errorf("Credentials Decoding failed: CheckSession")
+		log.Println("credentials decoding failed: check session", err)
+		return fmt.Errorf("credentials decoding failed: check session")
 	}
 	found := false
 	serviceSessionFound := ServiceSession{}
@@ -304,9 +306,23 @@ func (sl *SystemLog) CheckSessions(managerCredentials *ManagerLogInCredentials) 
 	}
 	if found {
 		sl.Citizen = serviceSessionFound.Citizen.PublicId
+		updateReq, err := http.NewRequest("PATCH", CentralDomain+"manager/session/"+serviceSessionFound.PublicId+"/", nil)
+		if err != nil {
+			return fmt.Errorf("failed to create update session request")
+		}
+		updateReq.Header.Set("Content-Type", "application/json")
+		updateReq.Header.Set("Authorization", "Bearer "+managerCredentials.Access)
+		updateResp, err := http.DefaultClient.Do(updateReq)
+		if err != nil {
+			return fmt.Errorf("failed to send update session request")
+		}
+		defer updateResp.Body.Close()
+		if updateResp.StatusCode != http.StatusOK && updateResp.StatusCode != http.StatusCreated {
+			return fmt.Errorf("failed to update session: server side")
+		}
 		return nil
 	}
-	return fmt.Errorf("Failed to Find Active Session")
+	return fmt.Errorf("failed to find active session")
 }
 func (sl *SystemLog) GenerateLog() (SystemLogInterface, error) {
 	if sl.SpecialUser == "citizen" {

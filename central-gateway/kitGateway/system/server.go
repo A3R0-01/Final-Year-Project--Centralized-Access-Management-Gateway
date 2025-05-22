@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"time"
 
 	server "github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/Server"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
@@ -75,41 +74,10 @@ func (srv *Server) FetchEndpoints() {
 	srv.GenerateEndPoints()
 }
 
-func (srv *Server) SendLogs() {
-	go srv.SendLogRequest()
-}
-
-func (srv *Server) SendLogRequest() {
-	for {
-
-		req, err := http.NewRequest("POST", types.CentralDomain+"manager/log/manager/", nil)
-		if err != nil {
-			log.Println("Failed to create Update Logs Request")
-		}
-		req.Header.Add("Authorization", "Bearer "+srv.Credentials.Access)
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			log.Println("Failed to Make update logs request")
-		}
-		if resp.StatusCode != http.StatusOK {
-			log.Println("Log Request Failed: server side")
-		}
-		var response map[string]string
-		if json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Println("Failed to decode message from logs request")
-		} else {
-			log.Println("Logs Cron: " + response["message"])
-		}
-		time.Sleep(time.Minute * 15)
-	}
-}
-
 func NewServer() *Server {
-	credentials := generateManagerCredentials()
-	credentials.StartCredentials()
-	server := Server{Credentials: *credentials}
+	server := Server{Credentials: *generateManagerCredentials()}
+	server.Credentials.StartCredentials()
 	server.FetchEndpoints()
-	server.SendLogs()
 	return &server
 }
 func NewEndpoint(serviceName string, machineName string, fixedPath string, serviceUrl string, methods []string, id string) (*types.Endpoint, error) {
