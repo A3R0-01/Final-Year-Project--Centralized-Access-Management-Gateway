@@ -25,7 +25,7 @@ class AbstractModelViewSet(ModelViewSet):
         self.check_object_permissions(self.request, obj)
         return obj
 
-    def get_query_keys(self) -> list:
+    def get_query_keys(self) -> list[str]:
         query_params = self.request.GET
         query_list = list(query_params.keys())
         return query_list
@@ -40,9 +40,21 @@ class AbstractModelViewSet(ModelViewSet):
         key_words = {}
         for query in self.get_query_keys() :
             for attribute in model_attributes:
-                if attribute in query: key_words[query] = self.request.query_params.get(query)
+                if attribute in query: 
+                    value = self.request.query_params.get(query)
+                    if "__in" in query:
+                        value = self.parse_unquoted_list(value)
+                    key_words[query] = value
         return key_words
     
+    def parse_unquoted_list(self, s:str):
+        # Remove square brackets and strip whitespace
+        s = s.strip("[]").strip()
+
+        # Split on comma and strip each part
+        elements = [item.strip() for item in s.split(",") if item.strip()]
+
+        return elements
     def get_queryset(self):
         queries = self.get_queries()
         return self.serializer_class.Meta.model.objects.filter(**queries)

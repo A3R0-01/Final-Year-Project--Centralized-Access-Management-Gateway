@@ -43,7 +43,6 @@ class AbstractLogModel(AbstractModel):
     Object = models.CharField()
     RecordId = models.CharField(null=True)
     IpAddress = models.CharField(max_length=19)
-    StatusCode = models.IntegerField()
     Message = models.CharField()
 
     objects : AbstractLogManager = AbstractLogManager()
