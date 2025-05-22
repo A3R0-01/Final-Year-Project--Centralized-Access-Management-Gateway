@@ -13,7 +13,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 // type Middleware func(*BasicService) Service
@@ -21,7 +20,6 @@ type Middleware func(Service) Service
 
 type LoggingMiddleware struct {
 	log                log.Logger
-	producer           *kafka.Producer
 	ServiceName        string
 	ServiceMachineName string
 	ServiceId          string
@@ -30,11 +28,10 @@ type LoggingMiddleware struct {
 	Credentials        *types.ManagerLogInCredentials
 }
 
-func NewLoggingMiddleware(logger log.Logger, producer *kafka.Producer, credentials *types.ManagerLogInCredentials) Middleware {
+func NewLoggingMiddleware(logger log.Logger, credentials *types.ManagerLogInCredentials) Middleware {
 	return func(service Service) Service {
 		return &LoggingMiddleware{
 			log:                logger,
-			producer:           producer,
 			ServiceName:        service.GetServiceName(),
 			ServiceMachineName: service.GetServiceMachineName(),
 			ServiceId:          service.GetServiceId(),

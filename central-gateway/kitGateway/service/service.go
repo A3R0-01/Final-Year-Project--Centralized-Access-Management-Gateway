@@ -163,14 +163,10 @@ func NewProducer() (*kafka.Producer, error) {
 
 func New(logger log.Logger, server *system.Server, globalMetricsHolder *types.GlobalMetricsHolder) []Service {
 	var services []Service
-	producer, err := NewProducer()
-	if err != nil {
-		normalLog.Fatal("failed to create producer: ", err)
-	}
 	for _, endP := range server.EndPoints {
 		{
 			basicService := NewBasicService(endP)
-			service := NewLoggingMiddleware(logger, producer, &server.Credentials)(basicService)
+			service := NewLoggingMiddleware(logger, &server.Credentials)(basicService)
 			service = NewInstrumentingMiddleware(globalMetricsHolder)(service)
 			services = append(services, service)
 		}
