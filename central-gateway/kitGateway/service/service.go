@@ -16,7 +16,6 @@ import (
 
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/system"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type Service interface {
@@ -139,27 +138,27 @@ func NewBasicService(endPoint *types.Endpoint) *BasicService {
 	}
 }
 
-func NewProducer() (*kafka.Producer, error) {
-	producer, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost",
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create the producer: %s", err.Error())
-	}
-	go func() {
-		for e := range producer.Events() {
-			switch ev := e.(type) {
-			case *kafka.Message:
-				if ev.TopicPartition.Error != nil {
-					normalLog.Printf("Delivery failed: %v\n ", ev.TopicPartition)
-				} else {
-					normalLog.Printf("Delivered message: to %v\n", ev.TopicPartition)
-				}
-			}
-		}
-	}()
-	return producer, nil
-}
+// func NewProducer() (*kafka.Producer, error) {
+// 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
+// 		"bootstrap.servers": "localhost",
+// 	})
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to create the producer: %s", err.Error())
+// 	}
+// 	go func() {
+// 		for e := range producer.Events() {
+// 			switch ev := e.(type) {
+// 			case *kafka.Message:
+// 				if ev.TopicPartition.Error != nil {
+// 					normalLog.Printf("Delivery failed: %v\n ", ev.TopicPartition)
+// 				} else {
+// 					normalLog.Printf("Delivered message: to %v\n", ev.TopicPartition)
+// 				}
+// 			}
+// 		}
+// 	}()
+// 	return producer, nil
+// }
 
 func New(logger log.Logger, server *system.Server, globalMetricsHolder *types.GlobalMetricsHolder) []Service {
 	var services []Service
