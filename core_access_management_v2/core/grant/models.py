@@ -9,8 +9,8 @@ class GrantManager(AbstractManager):
 
 class Grant(AbstractModel):
     Message = models.CharField(max_length=300)
-    Request = models.OneToOneField(to='request.Request', on_delete=models.PROTECT)
-    Grantee = models.ForeignKey(to='grantee.Grantee', on_delete=models.PROTECT, null=True)
+    Request = models.OneToOneField(to='request.Request', on_delete=models.CASCADE)
+    Grantee = models.ForeignKey(to='grantee.Grantee', on_delete=models.CASCADE, null=True)
     Decline = models.BooleanField(default=False)
     StartDate = models.DateTimeField(null=True)
     EndDate = models.DateTimeField(null=True)

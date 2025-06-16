@@ -15,7 +15,7 @@ class Grantee(AbstractBaseUser, AbstractModel):
     GranteeUserName = models.CharField(max_length=50, unique=True)
     Citizen = models.OneToOneField(to='citizen.Citizen', on_delete=models.PROTECT)
     Administrator = models.ForeignKey(to='administrator.Administrator', on_delete=models.PROTECT)
-    Association = models.ForeignKey(to='association.Association', on_delete=models.DO_NOTHING)
+    Association = models.ForeignKey(to='association.Association', on_delete=models.CASCADE)
     FirstEmail = models.EmailField(unique=True)
     SecondEmail = models.EmailField(unique=True, null=True)
 

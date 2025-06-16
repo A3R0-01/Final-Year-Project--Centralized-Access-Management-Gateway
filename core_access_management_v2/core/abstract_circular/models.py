@@ -38,7 +38,7 @@ class AbstractLogManager(AbstractManager):
     pass
 
 class AbstractLogModel(AbstractModel):
-    Citizen = models.ForeignKey(to='citizen.Citizen', on_delete=models.PROTECT)
+    Citizen = models.ForeignKey(to='citizen.Citizen', on_delete=models.CASCADE)
     Method = models.CharField()
     Object = models.CharField()
     RecordId = models.CharField(null=True)

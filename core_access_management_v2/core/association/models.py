@@ -9,7 +9,7 @@ class AssociationManager(AbstractManager):
 class Association(AbstractModel):
     Title = models.CharField(max_length=100, unique=True)
     Email = models.EmailField(unique=True)
-    Department = models.ForeignKey(to='department.Department', on_delete=models.PROTECT)
+    Department = models.ForeignKey(to='department.Department', on_delete=models.CASCADE)
     Description = models.TextField()
     Website = models.URLField(null=True)
 

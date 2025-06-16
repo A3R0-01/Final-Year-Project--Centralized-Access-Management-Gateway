@@ -23,8 +23,8 @@ class RequestManager(AbstractManager):
 
 class Request(AbstractModel):
     Subject = models.CharField(max_length=50)
-    Citizen = models.ForeignKey(to='citizen.Citizen', on_delete=models.PROTECT)
-    PublicService = models.ForeignKey(to='publicService.PublicService', on_delete=models.PROTECT)
+    Citizen = models.ForeignKey(to='citizen.Citizen', on_delete=models.CASCADE)
+    PublicService = models.ForeignKey(to='publicService.PublicService', on_delete=models.CASCADE)
     Message = models.CharField(max_length=500)
 
     objects : RequestManager = RequestManager()

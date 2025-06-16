@@ -13,8 +13,8 @@ class ServiceSessionManager(AbstractManager):
     pass
 
 class ServiceSession(AbstractModel):
-    Citizen = models.ForeignKey(to='citizen.Citizen', on_delete=models.PROTECT)
-    Service = models.ForeignKey(to='publicService.PublicService', on_delete=models.DO_NOTHING)
+    Citizen = models.ForeignKey(to='citizen.Citizen', on_delete=models.CASCADE)
+    Service = models.ForeignKey(to='publicService.PublicService', on_delete=models.CASCADE)
     IpAddress = models.CharField(max_length=19)
     LastSeen = models.DateTimeField(null=True)
     EnforceExpiry = models.BooleanField(default=False)
