@@ -26,6 +26,8 @@ class AdministratorModelSerializer(AbstractModelSerializer):
         data = super().to_representation(instance)
         data['Citizen'] = StaffCitizenSerializer(instance.Citizen).data
         return data
+    def validate_password(self, value: str) -> str:
+        return make_password(value)
 
 class SiteManagerAdministratorModelSerializer(AdministratorModelSerializer):
     password = CharField(max_length=128, min_length=8, write_only=True, required=True)

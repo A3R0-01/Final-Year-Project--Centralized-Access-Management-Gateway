@@ -9,6 +9,7 @@ from .serializers import AbstractModelSerializer
 from .models import AbstractManager
 from .authenticationClasses import IsSiteManager, IsAdministrator, IsGrantee
 from pprint import pprint
+from django.db.utils import IntegrityError
 # Create your views here.
 
 class AbstractModelViewSet(ModelViewSet):
@@ -66,11 +67,14 @@ class AbstractModelViewSet(ModelViewSet):
         return serializer.data['id']
 
     def create(self, request, *args, **kwargs):
-        serializer : AbstractModelSerializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer=serializer)
-        return Response(serializer.data, HTTP_201_CREATED)
-    
+        try:
+                
+            serializer : AbstractModelSerializer = self.serializer_class(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer=serializer)
+            return Response(serializer.data, HTTP_201_CREATED)
+        except(IntegrityError) as er:
+            raise ValidationError('Pick Another Citizen')
 
 class AbstractGranteeModelViewSet(AbstractModelViewSet):
     http_method_names = ('patch', 'get', 'post')

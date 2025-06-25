@@ -15,5 +15,5 @@ class SiteManagerSerializer(AbstractModelSerializer):
             'id', 'ManagerUserName', 'Citizen', 'FirstEmail', 'SecondEmail', 'Created', 'Updated'
         ]
         read_only_fields = [
-            'id', 'ManagerUserName', 'Citizen', 'FirstEmail', 'SecondEmail', 'Created', 'Updated'
+            'id', 'Created', 'Updated'
         ]
