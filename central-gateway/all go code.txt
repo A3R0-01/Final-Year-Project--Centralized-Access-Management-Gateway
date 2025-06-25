@@ -1,0 +1,2365 @@
+package verify
+
+import (
+	"fmt"
+	"net"
+	"net/http"
+	"strings"
+)
+
+var (
+	available_methods = []string{"get", "patch", "delete", "post"}
+)
+
+func VerifyMethods(methods []string) error {
+	for _, value := range methods {
+		found := false
+		for _, fixed_value := range available_methods {
+			if strings.ToLower(value) == strings.ToLower(fixed_value) {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("invalid method")
+		}
+	}
+	return nil
+}
+
+// func VerifyMachineNames(endpoints map[string]*types.Endpoint) error {
+// 	for key, endpoint := range endpoints {
+// 		for secondKey, duplicate := range endpoints {
+// 			if key != secondKey {
+// 				if strings.ToLower(endpoint.MachineName) == strings.ToLower(duplicate.MachineName) {
+// 					return fmt.Errorf("duplicate services")
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
+
+func GetIP(r *http.Request) string {
+	// Check for X-Forwarded-For header first (standard for proxies)
+	ip := r.Header.Get("X-Forwarded-For")
+	if ip != "" {
+		// X-Forwarded-For can contain multiple IPs (client, proxy1, proxy2, ...)
+		// The first one is the original client IP
+		ips := strings.Split(ip, ",")
+		if len(ips) > 0 {
+			return strings.TrimSpace(ips[0])
+		}
+	}
+
+	// Try other common headers
+	ip = r.Header.Get("X-Real-IP")
+	if ip != "" {
+		return ip
+	}
+
+	// Try X-Client-IP (used by some CDNs and proxies)
+	ip = r.Header.Get("X-Client-IP")
+	if ip != "" {
+		return ip
+	}
+
+	// Use RemoteAddr as fallback
+	if r.RemoteAddr != "" {
+		// RemoteAddr includes port, so we need to strip it
+		ipWithPort := r.RemoteAddr
+		host, _, err := net.SplitHostPort(ipWithPort)
+		if err == nil {
+			return host
+		}
+		// If SplitHostPort fails, return the original string
+		return ipWithPort
+	}
+
+	return "unknown"
+}
+
+func NormalizeIP(ipStr string) string {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return ipStr // Invalid IP, return as-is
+	}
+
+	// Convert IPv6 loopback (::1) to IPv4 loopback
+	if ip.IsLoopback() && ip.To4() == nil {
+		return "127.0.0.1"
+	}
+
+	// Convert IPv6-mapped IPv4 (::ffff:x.x.x.x) to x.x.x.x
+	if ip4 := ip.To4(); ip4 != nil {
+		return ip4.String()
+	}
+
+	// Return the normalized IPv6 string
+	return ip.String()
+}
+
+package types
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"net/http/httputil"
+	"strings"
+)
+
+type Authenticator struct {
+	Request            *http.Request
+	ResponseWriter     http.ResponseWriter
+	Code               *int
+	Service            string
+	ServiceMachineName string
+	ServiceId          string
+	SystemLog          SystemLogInterface
+	Endpoints          *MapEndPoint
+	Proxy              *httputil.ReverseProxy
+}
+
+func (auth *Authenticator) PopulateAuthenticate(endpoints *MapEndPoint, managerCredentials *ManagerLogInCredentials) error {
+	auth.Endpoints = endpoints
+	err := auth.UrlData(endpoints)
+	if err != nil {
+		return err
+	}
+	serviceDetails := map[string]string{"service": auth.ServiceMachineName, "serviceId": auth.ServiceId}
+	return auth.SystemLog.Populate(auth.Request, serviceDetails, managerCredentials)
+}
+
+func (auth *Authenticator) VerifyService() error {
+	return nil
+}
+
+func (auth *Authenticator) UrlData(endpoints *MapEndPoint) error {
+	auth.ServiceMachineName = auth.GetServiceName(auth.Request.URL.Path)
+	auth.Service = auth.GetServiceName(auth.Request.URL.Path)
+	path := auth.Request.URL.Path
+	log.Println(path)
+	endPoint, exists := endpoints.GetEndPoint(auth.Service)
+	if !exists {
+		data := map[string]string{"message": "Service Not Found"}
+		auth.ResponseWriter.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(auth.ResponseWriter).Encode(data)
+		return fmt.Errorf("service not found")
+	}
+	auth.ServiceId = endPoint.ServiceId
+	auth.Request.URL.Path = strings.Replace(path, auth.ServiceMachineName, "/"+endPoint.FixedPath+"/", 1)
+	auth.Request.URL.Path = RefineUrl(auth.Request.URL.Path)
+	return nil
+}
+func (auth *Authenticator) GetServiceName(r string) string {
+	parts := strings.FieldsFunc(r, func(rw rune) bool {
+		return rw == '/'
+	})
+	log.Println("service accessed", parts[0])
+	return parts[0]
+}
+
+//	func NewAuthenticator(w http.ResponseWriter, r *http.Request) *Authenticator {
+//		return &Authenticator{
+//			Request:        r,
+//			ResponseWriter: w,
+//			SystemLog:      &SystemLog{},
+//		}
+//	}
+func NewAuthenticator(r *http.Request) *Authenticator {
+	return &Authenticator{
+		Request:   r,
+		SystemLog: &SystemLog{},
+	}
+}
+
+
+package types
+
+import (
+	"net/http"
+	"net/url"
+)
+
+type HandlerFunc func(http.ResponseWriter, *http.Request)
+
+type HandleServeInterface interface {
+	Serve(interface{})
+}
+
+type Endpoint struct {
+	ServiceName string
+	MachineName string
+	URL         *url.URL
+	FixedPath   string
+	Methods     []string
+	ServiceId   string
+}
+type MapEndPoint map[string]*Endpoint
+
+func (m MapEndPoint) GetEndPoint(name string) (*Endpoint, bool) {
+	endPoint, exists := m[name]
+	return endPoint, exists
+}
+
+type AssociationClient struct {
+	Endpoints []Endpoint `json:"endpoints"`
+	Service   string     `json:"company"`
+	Type      string     `json:"http"`
+}
+
+type RequestData struct {
+	Model    string
+	Method   string
+	UserType string
+	URL      *url.URL
+}
+
+package types
+
+var (
+	GatewayDomain                = "http://127.0.0.1:8020/"
+	CentralDomain                = "http://127.0.0.1:8000/api/"
+	LoginEndpoint                = CentralDomain + "manager/login/"
+	RefreshEndpoint              = CentralDomain + "auth/refresh/"
+	rudiUrl                      = "http://127.0.0.1:8002"
+	rudiUrl2                     = "http://127.0.0.1:8001"
+	Central_access_managementUrl = "http://127.0.0.1:8000/api"
+	Exempt_models                = []string{"login", "refresh"}
+	Base_models                  = []string{"manager", "grantee", "admin", "permission", "log", "auth"}
+	SecondLevel_base_models      = []string{"permission", "log"}
+	KafkaLoggerTopic             = "systemLog"
+)
+
+func RefineUrl(url string) string {
+	prev := ""
+	newString := ""
+	for key, str := range url {
+		if key == 0 {
+			prev = string(str)
+			newString = newString + prev
+			continue
+		}
+		if prev == "/" && string(str) == "/" {
+			continue
+		}
+		newString = newString + string(str)
+		prev = string(str)
+
+	}
+	return newString
+}
+
+
+package types
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"log"
+	"net/http"
+	"time"
+)
+
+type ManagerLogInCredentials struct {
+	Email           string `json:"Email"`
+	Password        string `json:"password"`
+	ManagerUserName string `json:"ManagerUserName"`
+	ManagerPassword string `json:"ManagerPassword"`
+	Access          string `json:"access"`
+	Refresh         string `json:"refresh"`
+}
+
+func (c *ManagerLogInCredentials) login() {
+	credentials, err := json.Marshal(c)
+	if err != nil {
+		log.Fatal("Credentials json error")
+	}
+	req, err := http.NewRequest("POST", LoginEndpoint, bytes.NewBuffer(credentials))
+	if err != nil {
+		log.Fatal("Creation: http login Request")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal("http login request failed")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal("http server response failed, \n: body conversion failed as well")
+		}
+		log.Fatal("http server response failed:\n\tBody: \t" + string(bodyBytes))
+	}
+
+	var respContainer ManagerLogInCredentials
+	if err := json.NewDecoder(resp.Body).Decode(&respContainer); err != nil {
+		log.Fatal("Credentials Decoding failed", err)
+	}
+	c.Access = respContainer.Access
+	c.Refresh = respContainer.Refresh
+}
+
+func (c *ManagerLogInCredentials) refresh() bool {
+	credentials, err := json.Marshal(c)
+	if err != nil {
+		log.Fatal("Refresh:: Credentials json error")
+	}
+	req, err := http.NewRequest("POST", RefreshEndpoint, bytes.NewBuffer(credentials))
+	if err != nil {
+		log.Fatal("Creation: http refresh Request")
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal("http refresh request failed")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return false
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal("Refresh: http server response failed, \n: body conversion failed as well")
+		}
+		log.Fatal("Refresh: http server response failed:\n\tBody: \t" + string(bodyBytes))
+	}
+
+	var respContainer ManagerLogInCredentials
+	if err := json.NewDecoder(resp.Body).Decode(&respContainer); err != nil {
+		log.Fatal("Refresh: Credentials Decoding failed", err)
+	}
+	c.Access = respContainer.Access
+	return true
+}
+
+func (c *ManagerLogInCredentials) StartCredentials() {
+	c.login()
+	go func() {
+		for {
+			success := c.refresh()
+			if !success {
+				c.login()
+			}
+			time.Sleep(time.Minute * 4)
+		}
+	}()
+
+}
+
+
+package types
+
+// import (
+// 	"encoding/json"
+// 	"fmt"
+// 	"log"
+
+// 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+// )
+
+// type Logger struct {
+// 	Producer *kafka.Producer
+// 	Topic    string
+// 	next     HandleServeInterface
+// }
+
+// func (logger *Logger) Serve(auth *Authenticator) {
+// 	logger.next.Serve(auth)
+// 	logger.LogData(auth)
+// }
+
+// func (logger *Logger) LogData(auth *Authenticator) error {
+// 	jsonLog, err := json.Marshal(auth.SystemLog)
+// 	if err != nil {
+// 		return fmt.Errorf("Failed to marshal log data")
+// 	}
+// 	err = logger.Producer.Produce(
+// 		&kafka.Message{
+// 			TopicPartition: kafka.TopicPartition{Topic: &logger.Topic, Partition: kafka.PartitionAny},
+// 			Value:          jsonLog},
+// 		nil,
+// 	)
+// 	if err != nil {
+// 		return fmt.Errorf("Failed to push data to kafka")
+// 	}
+// 	return nil
+
+// }
+
+// func NewLoggerKafkaProducer(prevServer HandleServeInterface) (*Logger, error) {
+// 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
+// 		"bootstrap.servers": "host1:9092, host2:9092",
+// 		"client.id":         "central-access-gateway",
+// 		"acks":              "all",
+// 	})
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to create the producer: %s", err.Error())
+// 	}
+// 	go func() {
+// 		for e := range producer.Events() {
+// 			switch ev := e.(type) {
+// 			case *kafka.Message:
+// 				if ev.TopicPartition.Error != nil {
+// 					log.Printf("Delivery failed: %v\n ", ev.TopicPartition)
+// 				} else {
+// 					log.Printf("Delivered message: to %v\n", ev.TopicPartition)
+// 				}
+// 			}
+// 		}
+// 	}()
+// 	logger := Logger{
+// 		Producer: producer,
+// 		Topic:    KafkaLoggerTopic,
+// 		next:     prevServer,
+// 	}
+
+// 	return &logger, nil
+
+// }
+
+
+package types
+
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+type GlobalMetricsHolder struct {
+	GlobalReqLatency      prometheus.Histogram
+	GlobalErrLatency      prometheus.Histogram
+	GlobalReqCounter      prometheus.Counter
+	GlobalErrCounter      prometheus.Counter
+	GlobalServicesCounter prometheus.Counter
+}
+
+func NewGlobalMetricsHolder() *GlobalMetricsHolder {
+
+	globalReqLatency := promauto.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "global_request_latency",
+		Name:      "global",
+		Buckets:   []float64{0.1, 0.5, 1.0},
+	})
+	globalErrLatency := promauto.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "global_error_latency",
+		Name:      "global",
+		Buckets:   []float64{0.1, 0.5, 1.0},
+	})
+	globalReqCounter := promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "global_request_counter",
+		Name:      "global",
+	})
+	globalErrCounter := promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "global_error_counter",
+		Name:      "global",
+	})
+	globalServicesCounter := promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "global_services_counter",
+		Name:      "global",
+	})
+
+	return &GlobalMetricsHolder{
+		GlobalReqLatency:      globalReqLatency,
+		GlobalErrLatency:      globalErrLatency,
+		GlobalReqCounter:      globalReqCounter,
+		GlobalErrCounter:      globalErrCounter,
+		GlobalServicesCounter: globalServicesCounter,
+	}
+
+}
+
+
+package types
+
+import (
+	"fmt"
+)
+
+type PublicService struct {
+	PublicId    string              `json:"id"`
+	Title       string              `json:"Title"`
+	MachineName string              `json:"MachineName"`
+	Description string              `json:"Description"`
+	Email       string              `json:"Email"`
+	Grantee     []map[string]string `json:"Grantee"`
+	Association map[string]string   `json:"Association"`
+	Restricted  bool                `json:"Restricted"`
+	URL         string              `json:"URL"`
+	Visibility  bool                `json:"Visibility"`
+	Methods     []string            `json:"Methods"`
+}
+
+func (s *PublicService) String() string {
+	return fmt.Sprint(s.Title + ": \tMachine Name: " + s.MachineName + "\tUrl: " + s.URL)
+}
+
+type ServiceSessionService struct {
+	PublicId    string `json:"id"`
+	Title       string `json:"Title"`
+	MachineName string `json:"MachineName"`
+	URL         string `json:"URL"`
+}
+
+type ServiceSessionCitizen struct {
+	PublicId   string `json:"id"`
+	UserName   string `json:"UserName"`
+	Email      string `json:"Email"`
+	FirstName  string `json:"FirstName"`
+	SecondName string `json:"SecondName"`
+	NationalId string `json:"NationalId"`
+}
+
+type ServiceSession struct {
+	PublicId      string                `json:"id"`
+	Citizen       ServiceSessionCitizen `json:"Citizen"`
+	Service       ServiceSessionService `json:"Service"`
+	IpAddress     string                `json:"IpAddress"`
+	EnforceExpiry bool                  `json:"EnforceExpiry"`
+	Expired       bool                  `json:"Expired"`
+}
+type ServiceSessionRequest struct {
+	Citizen   string `json:"Citizen"`
+	Service   string `json:"Service"`
+	IpAddress string `json:"IpAddress"`
+}
+
+
+package types
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"strings"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
+)
+
+type SystemLogInterface interface {
+	Populate(request *http.Request, service map[string]string, managerCredentials *ManagerLogInCredentials) error
+	getCitizen(request *http.Request, managerCredentials *ManagerLogInCredentials) error
+	CheckSessions(managerCredentials *ManagerLogInCredentials) error
+	VerifyService(authenticationHeader string, managerCredentials *ManagerLogInCredentials) error
+	getSpecialUserId(authenticationHeader string) error
+	SetStatusCode(statusCode int)
+	SetRecordId(id string)
+	SetMessage(message string)
+	SetObject(object string)
+	GenerateLog() (SystemLogInterface, error)
+	GetSpecialUser() string
+}
+
+type SystemLog struct {
+	Citizen       string `json:"Citizen"`
+	Method        string `json:"Method"`
+	Object        string `json:"Object"`
+	RecordId      string `json:"RecordId"`
+	StatusCode    int    `json:"StatusCode"`
+	Message       string `json:"Message"`
+	IpAddress     string `json:"IpAddress"`
+	SpecialUser   string
+	SpecialUserId string
+}
+
+type AdministratorSystemLog struct {
+	SystemLog
+	Administrator string `json:"Administrator"`
+}
+
+type ManagerSystemLog struct {
+	SystemLog
+	SiteManager string `json:"SiteManager"`
+}
+
+type GranteeSystemLog struct {
+	SystemLog
+	Grantee string `json:"Grantee"`
+}
+
+func (sl *SystemLog) Populate(request *http.Request, service map[string]string, managerCredentials *ManagerLogInCredentials) error {
+	sl.IpAddress = verify.NormalizeIP(verify.GetIP(request))
+	parts := strings.FieldsFunc(request.URL.Path, func(rw rune) bool {
+		return rw == '/'
+	})
+	var secondary bool = false
+	var found = false
+	var baseModel string
+	sl.RecordId = "n/a"
+	if service["service"] == "c_a_m" {
+		for key, routeComponent := range parts {
+			if !found {
+				if answer, text := isBaseModel(routeComponent, secondary); !answer {
+					if baseModel == "auth" || baseModel == "manager" || baseModel == "grantee" || baseModel == "admin" {
+						sl.Object = Capitalize(text)
+					} else {
+						sl.Object = Capitalize(text) + Capitalize(baseModel)
+					}
+					if sl.Object == "Service" {
+						sl.Object = "PublicService"
+					}
+					found = true
+					if len(parts) == 1 {
+						sl.SpecialUser = "citizen"
+					}
+					continue
+				}
+			} else {
+				sl.RecordId = routeComponent
+			}
+
+			baseModel = routeComponent
+			if (baseModel == "manager" || baseModel == "admin" || baseModel == "grantee" || baseModel == "auth") && key == 0 {
+				if baseModel == "auth" {
+					sl.SpecialUser = "citizen"
+				} else {
+					sl.SpecialUser = baseModel
+				}
+			} else {
+				sl.SpecialUser = "citizen"
+			}
+			secondary = true
+		}
+		sl.Method = request.Method
+		if sl.Method == http.MethodPost {
+			sl.Message = "Created Entity"
+		} else if sl.Method == http.MethodPatch {
+			sl.RecordId = parts[len(parts)-1]
+			sl.Message = "Edited Entity: " + sl.RecordId
+		} else if sl.Method == http.MethodDelete {
+			sl.RecordId = parts[len(parts)-1]
+			sl.Message = "Deleted Entity: " + sl.RecordId
+		} else {
+			sl.Message = "Accessd Entity: N\\A"
+		}
+	} else {
+		sl.SpecialUser = "citizen"
+		sl.Object = "Service"
+		sl.RecordId = service["serviceId"]
+		sl.Method = request.Method
+		sl.Message = "Accessed Service: " + service["service"]
+	}
+
+	if !isExemptModel(strings.ToLower(sl.Object)) {
+		authenticationHeader := request.Header.Get("Authorization")
+		if sl.Object == "Service" {
+			if err := sl.CheckSessions(managerCredentials); err != nil {
+				log.Println("There was an error:\n" + err.Error())
+				err := sl.getCitizen(request, managerCredentials)
+				if err != nil {
+					log.Println(err)
+					return err
+				}
+			}
+		} else {
+			err := sl.getCitizen(request, managerCredentials)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+		}
+
+		// if authenticationHeader == "" {
+		// 	return fmt.Errorf("Not Authenticated")
+		// }
+
+		// fmt.Println(sl.Citizen)
+		if sl.SpecialUser != "citizen" {
+			if err := sl.getSpecialUserId(authenticationHeader); err != nil {
+				log.Println("Failed To get special user")
+				return err
+			}
+		}
+
+	}
+	fmt.Println("object: ", sl.Object)
+	fmt.Println("Method: ", sl.Method)
+	fmt.Println("User: ", sl.SpecialUser)
+	fmt.Println("Id: ", sl.RecordId)
+	fmt.Println("Citizen: ", sl.Citizen)
+	return nil
+
+}
+func (sl *SystemLog) getCitizen(request *http.Request, managerCredentials *ManagerLogInCredentials) error {
+	authenticationHeader := request.Header.Get("Authorization")
+
+	req, err := http.NewRequest("GET", CentralDomain+"citizen/stuff/", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authenticationHeader)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Authentication Failed")
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	var user User
+	if err := json.Unmarshal(body, &user); err != nil {
+		return err
+	}
+	sl.Citizen = user.PublicId
+	if sl.Object == "Service" {
+		return sl.VerifyService(authenticationHeader, managerCredentials)
+	}
+	return nil
+}
+
+func (sl *SystemLog) getSpecialUserId(authenticationHeader string) error {
+	req, err := http.NewRequest("GET", CentralDomain+sl.SpecialUser+"/"+sl.SpecialUser+"/stuff", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authenticationHeader)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("authentication failed")
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	var user User
+	if err := json.Unmarshal(body, &user); err != nil {
+		return err
+	}
+	sl.SpecialUserId = user.PublicId
+	return nil
+}
+func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentials *ManagerLogInCredentials) error {
+	if sl.RecordId == "" {
+		return fmt.Errorf("service error")
+	}
+
+	session := ServiceSessionRequest{
+		Citizen:   sl.Citizen,
+		Service:   sl.RecordId,
+		IpAddress: sl.IpAddress,
+	}
+	fmt.Println(session)
+	// fmt.Println("log: " + CentralDomain + "service/" + sl.RecordId)
+	req, err := http.NewRequest("GET", CentralDomain+"service/"+sl.RecordId+"/", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authenticationHeader)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("service unauthorized")
+	} else if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("authentication failed")
+	}
+	sessionJson, err := json.Marshal(session)
+	if err != nil {
+		return fmt.Errorf("Failed to create Session: 0")
+	}
+	sessionReq, err := http.NewRequest("POST", CentralDomain+"manager/session/", bytes.NewBuffer(sessionJson))
+	if err != nil {
+		return fmt.Errorf("Failed to create Session: 1")
+	}
+	sessionReq.Header.Set("Content-Type", "application/json")
+	sessionReq.Header.Set("Authorization", "Bearer "+managerCredentials.Access)
+	resp, err = http.DefaultClient.Do(sessionReq)
+	if err != nil {
+		log.Println("Failed To Create Session: 2")
+		return fmt.Errorf("Failed To Create Session: 2")
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body) // important!
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		log.Println("Failed To Create Session: 2 service unauthorised: " + managerCredentials.Access)
+		return fmt.Errorf("service unauthorized")
+	}
+	return nil
+}
+
+func (sl *SystemLog) CheckSessions(managerCredentials *ManagerLogInCredentials) error {
+	if sl.IpAddress == "unknown" || sl.IpAddress == "" {
+		return fmt.Errorf("Authentication Failed")
+	}
+	fmt.Println("IpAddress: ", sl.IpAddress, "Service: "+sl.RecordId)
+	sessionReq, err := http.NewRequest("GET", CentralDomain+"manager/session/?Service__PublicId="+sl.RecordId+"&IpAddress="+sl.IpAddress, nil)
+	if err != nil {
+		return fmt.Errorf("failed to get session: 1")
+	}
+	sessionReq.Header.Set("Content-Type", "application/json")
+	sessionReq.Header.Set("Authorization", "Bearer "+managerCredentials.Access)
+	resp, err := http.DefaultClient.Do(sessionReq)
+	if err != nil {
+		return fmt.Errorf("failed to get session: 2")
+	}
+	defer resp.Body.Close()
+	// _, _ = io.Copy(io.Discard, resp.Body) // important!
+	fmt.Println("Bearer: ", "Bearer "+managerCredentials.Access)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("service unauthorized")
+	}
+	var respContainer []ServiceSession
+	if err := json.NewDecoder(resp.Body).Decode(&respContainer); err != nil {
+		log.Println("credentials decoding failed: check session", err)
+		return fmt.Errorf("credentials decoding failed: check session")
+	}
+	found := false
+	serviceSessionFound := ServiceSession{}
+	for _, serviceSession := range respContainer {
+		if serviceSession.Expired {
+			continue
+		}
+		found = true
+		serviceSessionFound = serviceSession
+		break
+	}
+	if found {
+		sl.Citizen = serviceSessionFound.Citizen.PublicId
+		updateReq, err := http.NewRequest("PATCH", CentralDomain+"manager/session/"+serviceSessionFound.PublicId+"/", nil)
+		if err != nil {
+			return fmt.Errorf("failed to create update session request")
+		}
+		updateReq.Header.Set("Content-Type", "application/json")
+		updateReq.Header.Set("Authorization", "Bearer "+managerCredentials.Access)
+		updateResp, err := http.DefaultClient.Do(updateReq)
+		if err != nil {
+			return fmt.Errorf("failed to send update session request")
+		}
+		defer updateResp.Body.Close()
+		if updateResp.StatusCode != http.StatusOK && updateResp.StatusCode != http.StatusCreated {
+			return fmt.Errorf("failed to update session: server side")
+		}
+		return nil
+	}
+	return fmt.Errorf("failed to find active session")
+}
+func (sl *SystemLog) GenerateLog() (SystemLogInterface, error) {
+	if sl.SpecialUser == "citizen" {
+		return sl, nil
+	} else if sl.SpecialUser == "manager" {
+		return &ManagerSystemLog{
+			SystemLog:   *sl,
+			SiteManager: sl.SpecialUserId,
+		}, nil
+	} else if sl.SpecialUser == "admin" {
+		return &AdministratorSystemLog{
+			SystemLog:     *sl,
+			Administrator: sl.SpecialUserId,
+		}, nil
+	} else if sl.SpecialUser == "grantee" {
+		return &GranteeSystemLog{
+			SystemLog: *sl,
+			Grantee:   sl.SpecialUserId,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("specialUser not set")
+
+}
+
+func (sl *SystemLog) SetRecordId(id string) {
+	sl.RecordId = id
+}
+func (sl *SystemLog) SetMessage(message string) {
+	sl.Message = message
+}
+func (sl *SystemLog) SetObject(object string) {
+	sl.Object = object
+}
+func (sl *SystemLog) SetStatusCode(code int) {
+	sl.StatusCode = code
+}
+func (sl *SystemLog) GetSpecialUser() string {
+	return sl.SpecialUser
+}
+
+func isBaseModel(text string, secondLevel bool) (bool, string) {
+	if isExemptModel(text) {
+		return false, text
+	}
+	for _, model := range Base_models {
+		if !secondLevel {
+			if model == text {
+				return true, text
+			}
+		} else {
+			for _, secondary_model := range SecondLevel_base_models {
+				if secondary_model == text {
+					return true, text
+				}
+			}
+		}
+	}
+	return false, text
+}
+func isExemptModel(text string) bool {
+	for _, model := range Exempt_models {
+		if model == text {
+			return true
+		}
+	}
+	return false
+}
+
+package types
+
+import "unicode"
+
+type User struct {
+	PublicId string `json:"id"`
+}
+
+type Administrator struct {
+}
+
+type Grantee struct {
+}
+
+type SiteManager struct {
+}
+
+type UserLogin struct {
+}
+
+func Capitalize(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	r := []rune(s)               // Convert string to rune slice for Unicode safety.
+	r[0] = unicode.ToUpper(r[0]) // Capitalize the first rune.
+	return string(r)             // Convert rune slice back to string.
+
+}
+
+
+package server
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+)
+
+func VerifyMachineNames(endpoints map[string]*types.Endpoint) error {
+	for key, endpoint := range endpoints {
+		for secondKey, duplicate := range endpoints {
+			if key != secondKey {
+				if strings.ToLower(endpoint.MachineName) == strings.ToLower(duplicate.MachineName) {
+					return fmt.Errorf("duplicate services")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+package server
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/http/httputil"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+)
+
+type Server struct {
+	id          string
+	EndPoints   types.MapEndPoint
+	Proxies     map[string]*httputil.ReverseProxy
+	Credentials types.ManagerLogInCredentials
+}
+
+func (srv *Server) FetchServices() *[]types.PublicService {
+	req, err := http.NewRequest("GET", types.CentralDomain+"manager/service/", nil)
+	if err != nil {
+		log.Fatal("ServerStartUp::\n Failed to generate request(fetchServices)")
+	}
+	req.Header.Set("Authorization", "Bearer "+srv.Credentials.Access)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal("ServerStartUp::\n Failed to execute request(fetchServices)")
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Failed to decode boby (fetchServices)")
+	}
+	var services []types.PublicService
+	if err := json.Unmarshal(body, &services); err != nil {
+		log.Fatal("ServerStartUp::\n Failed to decode response(fetchServices)\n" + err.Error())
+	}
+	return &services
+}
+
+func (srv *Server) GenerateEndPoints() {
+	services := srv.FetchServices()
+	camEndpoint, err := NewEndpoint("c_a_m", "c_a_m", "", types.Central_access_managementUrl, []string{"GET", "PATCH", "DELETE", "POST"}, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	endPoints := map[string]*types.Endpoint{}
+	endPoints[camEndpoint.MachineName] = camEndpoint
+
+	for _, service := range *services {
+		endpoint, err := NewEndpoint(service.Title, service.MachineName, "", service.URL, service.Methods, service.PublicId)
+		if err != nil {
+			log.Fatal("Failed to create endpoint: \n\t" + service.String())
+		}
+		endPoints[service.MachineName] = endpoint
+	}
+	if err := VerifyMachineNames(endPoints); err != nil {
+		log.Fatal("Duplicate ServicesNames ")
+	}
+	srv.EndPoints = endPoints
+}
+func (srv *Server) FetchEndpoints() {
+	// endPoint1, err := NewEndpoint("server1", "service", "/service", rudiUrl, []string{"GET", "PATCH"})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// endPoint2, err := NewEndpoint("server2", "stuff", "/stuff", rudiUrl2, []string{"GET", "PATCH"})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	srv.GenerateEndPoints()
+	srv.CreateProxies()
+}
+
+func (srv *Server) CreateProxies() {
+	srv.Proxies = map[string]*httputil.ReverseProxy{}
+	for _, endpoint := range srv.EndPoints {
+		proxy := httputil.NewSingleHostReverseProxy(endpoint.URL)
+		proxy.ModifyResponse = func(response *http.Response) error {
+			// modify page data
+			return nil
+		}
+		srv.Proxies[endpoint.MachineName] = proxy
+	}
+	fmt.Println("proxies at first", srv.Proxies)
+
+}
+
+func (srv *Server) HandleRequest(auth *types.Authenticator, code *int) {
+	proxy, exists := srv.Proxies[auth.Service]
+	if !exists {
+		data := map[string]string{"message": "Service Not Found"}
+		auth.ResponseWriter.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(auth.ResponseWriter).Encode(data)
+		log.Println("Proxy not found")
+	}
+	proxy.ModifyResponse = func(response *http.Response) error {
+		*code = response.StatusCode
+		return nil
+	}
+	log.Println("this is the proxy: ", proxy)
+
+	// proxy.ServeHTTP(auth.ResponseWriter, auth.Request)
+	// return
+}
+
+func (srv *Server) HandleServe(auth *types.Authenticator, code *int) {
+	srv.HandleRequest(auth, code)
+}
+func (srv *Server) Serve(w http.ResponseWriter, r *http.Request) {
+	var code int = 0
+	authenticator := types.NewAuthenticator(r)
+	if err := authenticator.PopulateAuthenticate(&srv.EndPoints, &srv.Credentials); err != nil {
+		log.Println(err)
+		return
+	}
+	srv.HandleServe(authenticator, &code)
+	if authenticator.Service == "c_a_m" {
+		authenticator.SystemLog.SetStatusCode(code)
+		fmt.Printf("Status Code is %d\n", code)
+	} else {
+		authenticator.SystemLog.SetObject("PublicService")
+		authenticator.SystemLog.SetRecordId(authenticator.ServiceId)
+		authenticator.SystemLog.SetMessage("Accessed Service: " + authenticator.Service + " at " + authenticator.Request.URL.Path)
+	}
+}
+
+func (srv *Server) StartGateway(port string) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		srv.Serve(w, r)
+		return
+	})
+
+	_ = http.ListenAndServe(":"+port, nil)
+}
+
+func NewServer() *Server {
+	credentials := generateManagerCredentials()
+	credentials.StartCredentials()
+
+	server := Server{Credentials: *credentials}
+	server.FetchEndpoints()
+	return &server
+}
+
+
+package server
+
+import (
+	"net/url"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
+)
+
+func NewEndpoint(serviceName string, machineName string, fixedPath string, serviceUrl string, methods []string, id string) (*types.Endpoint, error) {
+	formattedUrl, err := url.Parse(serviceUrl)
+	if err != nil {
+		return nil, err
+	}
+	if err := verify.VerifyMethods(methods); err != nil {
+		return nil, err
+	}
+
+	return &types.Endpoint{
+		ServiceName: serviceName,
+		MachineName: machineName,
+		URL:         formattedUrl,
+		FixedPath:   fixedPath,
+		Methods:     methods,
+		ServiceId:   id,
+	}, nil
+
+}
+
+func generateManagerCredentials() *types.ManagerLogInCredentials {
+	return &types.ManagerLogInCredentials{
+		ManagerUserName: "A3R0",
+		ManagerPassword: "bsrvnttngjltzl",
+		Email:           "erlsontmadara@gmail.com",
+		Password:        "1234bsrvnt",
+	}
+}
+
+
+package service
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httputil"
+	"time"
+
+	"github.com/go-kit/log"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+)
+
+// type Middleware func(*BasicService) Service
+type Middleware func(Service) Service
+
+type LoggingMiddleware struct {
+	log                log.Logger
+	ServiceName        string
+	ServiceMachineName string
+	ServiceId          string
+	next               Service
+	Proxy              *httputil.ReverseProxy
+	Credentials        *types.ManagerLogInCredentials
+}
+
+func NewLoggingMiddleware(logger log.Logger, credentials *types.ManagerLogInCredentials) Middleware {
+	return func(service Service) Service {
+		return &LoggingMiddleware{
+			log:                logger,
+			ServiceName:        service.GetServiceName(),
+			ServiceMachineName: service.GetServiceMachineName(),
+			ServiceId:          service.GetServiceId(),
+			Proxy:              service.GetProxy(),
+			Credentials:        credentials,
+			next:               service,
+		}
+	}
+}
+
+func (md *LoggingMiddleware) LogData(auth *types.Authenticator) error {
+	logOutput, err := auth.SystemLog.GenerateLog()
+	if err != nil {
+		return fmt.Errorf("failed to generate log")
+	}
+	jsonLog, err := json.Marshal(logOutput)
+	if err != nil {
+		return fmt.Errorf("failed to marshal log data")
+	}
+	fmt.Println(logOutput)
+	req, err := http.NewRequest("POST", types.CentralDomain+"manager/log/manager/", bytes.NewBuffer(jsonLog))
+	if err != nil {
+		return fmt.Errorf("failed create the request to push the log")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+md.Credentials.Access)
+	// err = md.producer.Produce(
+	// 	&kafka.Message{
+	// 		TopicPartition: kafka.TopicPartition{Topic: &types.KafkaLoggerTopic, Partition: kafka.PartitionAny},
+	// 		Value:          jsonLog},
+	// 	nil,
+	// )
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to push data to central access management")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to push log: server side")
+	}
+	return nil
+
+}
+
+func (md *LoggingMiddleware) GetServiceName() string {
+	return md.ServiceName
+}
+func (md *LoggingMiddleware) GetServiceId() string {
+	return md.ServiceId
+}
+func (md *LoggingMiddleware) GetServiceMachineName() string {
+	return md.ServiceMachineName
+}
+func (md *LoggingMiddleware) GetProxy() *httputil.ReverseProxy {
+	return md.Proxy
+}
+
+func (md *LoggingMiddleware) Serve(auth *types.Authenticator) (*types.Authenticator, error) {
+	defer func(start time.Time) {
+		err := md.LogData(auth)
+		md.log.Log("method", md.ServiceId, "took", time.Since(start), "err", err)
+	}(time.Now())
+	return md.next.Serve(auth)
+}
+
+func NewInstrumentingMiddleware(globalMetricsHolder *types.GlobalMetricsHolder) Middleware {
+	return func(next Service) Service {
+		globalMetricsHolder.GlobalServicesCounter.Inc()
+		return &InstrumentingMiddleware{
+			globalReqCounter: globalMetricsHolder.GlobalReqCounter,
+			globalErrCounter: globalMetricsHolder.GlobalErrCounter,
+			globalReqLatency: globalMetricsHolder.GlobalReqLatency,
+			globalErrLatency: globalMetricsHolder.GlobalErrLatency,
+			serviceReqCounter: promauto.NewCounter(prometheus.CounterOpts{
+				Namespace: next.GetServiceMachineName() + "_request_counter",
+				Name:      next.GetServiceMachineName(),
+			}),
+
+			serviceErrCounter: promauto.NewCounter(prometheus.CounterOpts{
+				Namespace: next.GetServiceMachineName() + "_error_counter",
+				Name:      next.GetServiceMachineName(),
+			}),
+
+			serviceReqLatency: promauto.NewHistogram(prometheus.HistogramOpts{
+				Namespace: next.GetServiceMachineName() + "_request_latency",
+				Name:      next.GetServiceMachineName(),
+				Buckets:   []float64{0.1, 0.5, 1.0},
+			}),
+
+			serviceErrLatency: promauto.NewHistogram(prometheus.HistogramOpts{
+				Namespace: next.GetServiceMachineName() + "_error_latency",
+				Name:      next.GetServiceMachineName(),
+				Buckets:   []float64{0.1, 0.5, 1.0},
+			}),
+
+			next:               next,
+			ServiceName:        next.GetServiceName(),
+			ServiceMachineName: next.GetServiceMachineName(),
+			ServiceId:          next.GetServiceId(),
+			Proxy:              next.GetProxy(),
+		}
+	}
+}
+
+type InstrumentingMiddleware struct {
+	globalReqCounter   prometheus.Counter
+	serviceReqCounter  prometheus.Counter
+	globalErrCounter   prometheus.Counter
+	serviceErrCounter  prometheus.Counter
+	globalReqLatency   prometheus.Histogram
+	serviceReqLatency  prometheus.Histogram
+	globalErrLatency   prometheus.Histogram
+	serviceErrLatency  prometheus.Histogram
+	next               Service
+	ServiceName        string
+	ServiceMachineName string
+	ServiceId          string
+	Proxy              *httputil.ReverseProxy
+}
+
+func (isMiddleware *InstrumentingMiddleware) Serve(auth *types.Authenticator) (returnAuth *types.Authenticator, err error) {
+	defer func(start time.Time) {
+		if err != nil {
+			isMiddleware.globalErrCounter.Inc()
+			isMiddleware.serviceErrCounter.Inc()
+			isMiddleware.globalErrLatency.Observe(float64(time.Since(start).Seconds()))
+			isMiddleware.serviceErrLatency.Observe(float64(time.Since(start).Seconds()))
+
+		}
+		isMiddleware.serviceReqCounter.Inc()
+		isMiddleware.globalReqCounter.Inc()
+		isMiddleware.globalReqLatency.Observe(float64(time.Since(start).Seconds()))
+		isMiddleware.serviceReqLatency.Observe(float64(time.Since(start).Seconds()))
+
+	}(time.Now())
+	returnAuth, err = isMiddleware.next.Serve(auth)
+	return
+}
+
+func (isMiddleware *InstrumentingMiddleware) GetServiceName() string {
+	return isMiddleware.ServiceName
+}
+func (isMiddleware *InstrumentingMiddleware) GetServiceMachineName() string {
+	return isMiddleware.ServiceMachineName
+}
+func (isMiddleware *InstrumentingMiddleware) GetServiceId() string {
+	return isMiddleware.ServiceId
+}
+func (isMiddleware *InstrumentingMiddleware) GetProxy() *httputil.ReverseProxy {
+	return isMiddleware.Proxy
+}
+
+
+
+package service
+
+import (
+	"compress/flate"
+	"compress/gzip"
+	"encoding/json"
+	"io"
+	"regexp"
+	"strings"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+	"github.com/andybalholm/brotli"
+)
+
+func injectBaseTag(html []byte, serviceMachineName string, originalDomain string) []byte {
+	re := regexp.MustCompile(`href\s*=\s*"(.*?)"`)
+
+	updated := re.ReplaceAllFunc(html, func(match []byte) []byte {
+		hrefMatch := re.FindSubmatch(match)
+		if len(hrefMatch) < 2 {
+			return match
+		}
+
+		original := string(hrefMatch[1])
+
+		// Skip absolute URLs that aren't the original domain
+		if strings.HasPrefix(original, "http://") || strings.HasPrefix(original, "https://") {
+			if !strings.HasPrefix(original, originalDomain) {
+				return match // leave external links alone
+			}
+			// Strip domain and treat like relative
+			original = strings.TrimPrefix(original, originalDomain)
+		}
+
+		// Clean relative path
+		cleanPath := strings.TrimLeft(original, "/.")
+		newHref := types.GatewayDomain + "/" + serviceMachineName + "/" + cleanPath
+		return []byte(`href="` + newHref + `"`)
+	})
+
+	return updated
+
+	// lower := bytes.ToLower(html)
+	// headIndex := bytes.Index(lower, []byte("<head>"))
+	// if headIndex == -1 {
+	// 	return html // no <head> found
+	// }
+
+	// insertPos := headIndex + len("<head>")
+	// baseTag := `<base href="` + types.GatewayDomain + serviceMachineName + `/">`
+	// return append(html[:insertPos], append([]byte(baseTag), html[insertPos:]...)...)
+}
+
+func rewriteCSSUrlsToGateway(css []byte, serviceName string, originalDomain string) []byte {
+	gatewayDomain := types.GatewayDomain
+
+	re := regexp.MustCompile(`url\(["']?(.*?)["']?\)`)
+
+	return re.ReplaceAllFunc(css, func(match []byte) []byte {
+		urlMatch := re.FindSubmatch(match)
+		if len(urlMatch) < 2 {
+			return match
+		}
+
+		original := string(urlMatch[1])
+
+		// Skip external links
+		if strings.HasPrefix(original, "http://") || strings.HasPrefix(original, "https://") {
+			if !strings.HasPrefix(original, originalDomain) {
+				return match // skip external domains
+			}
+			// Treat original domain as internal, strip it
+			original = strings.TrimPrefix(original, originalDomain)
+		}
+
+		cleanPath := strings.TrimLeft(original, "/.")
+		newURL := gatewayDomain + "/" + serviceName + "/" + cleanPath
+
+		return []byte(`url("` + newURL + `")`)
+	})
+}
+
+func decompressBody(body io.Reader, encoding string) ([]byte, error) {
+	switch encoding {
+	case "gzip":
+		r, err := gzip.NewReader(body)
+		if err != nil {
+			return nil, err
+		}
+		defer r.Close()
+		return io.ReadAll(r)
+	case "deflate":
+		r := flate.NewReader(body)
+		defer r.Close()
+		return io.ReadAll(r)
+	case "br":
+		r := brotli.NewReader(body)
+		return io.ReadAll(r)
+	default:
+		return io.ReadAll(body) // uncompressed
+	}
+}
+
+func rewriteJSONUrlsRecursive(jsonData []byte, serviceName, originalDomain string) []byte {
+	var data interface{}
+	if err := json.Unmarshal(jsonData, &data); err != nil {
+		return jsonData
+	}
+
+	rewritten := rewriteURLsInValue(data, serviceName, originalDomain)
+
+	result, err := json.Marshal(rewritten)
+	if err != nil {
+		return jsonData // fallback to original
+	}
+
+	return result
+}
+
+func rewriteURLsInValue(value interface{}, serviceName, originalDomain string) interface{} {
+	switch v := value.(type) {
+	case map[string]interface{}:
+		result := make(map[string]interface{})
+		for k, val := range v {
+			result[k] = rewriteURLsInValue(val, serviceName, originalDomain)
+		}
+		return result
+	case []interface{}:
+		result := make([]interface{}, len(v))
+		for i, val := range v {
+			result[i] = rewriteURLsInValue(val, serviceName, originalDomain)
+		}
+		return result
+	case string:
+		// Check if this string looks like a URL and rewrite it
+		if strings.HasPrefix(v, originalDomain) {
+			path := strings.TrimPrefix(v, originalDomain)
+			path = strings.TrimLeft(path, "/")
+			return types.GatewayDomain + "/" + serviceName + "/" + path
+		}
+		return v
+	default:
+		return v
+	}
+}
+
+func compressBody(w io.Writer, data []byte, encoding string) error {
+	switch encoding {
+	case "gzip":
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+		_, err := gz.Write(data)
+		return err
+	case "deflate":
+		fl, err := flate.NewWriter(w, flate.DefaultCompression)
+		if err != nil {
+			return err
+		}
+		defer fl.Close()
+		_, err = fl.Write(data)
+		return err
+	case "br":
+		br := brotli.NewWriter(w)
+		defer br.Close()
+		_, err := br.Write(data)
+		return err
+	default:
+		_, err := w.Write(data)
+		return err
+	}
+}
+
+func rewriteJSONUrls(jsonData []byte, serviceName, originalDomain string) []byte {
+	// Parse JSON to ensure we don't break structure
+	var data interface{}
+	if err := json.Unmarshal(jsonData, &data); err != nil {
+		// If JSON is invalid, return as-is
+		return jsonData
+	}
+
+	// Convert back to string for regex processing
+	jsonStr := string(jsonData)
+
+	// Match URLs in JSON values (handles both quoted strings and unescaped URLs)
+	urlRegex := regexp.MustCompile(`"(https?://[^"]+)"`)
+
+	result := urlRegex.ReplaceAllStringFunc(jsonStr, func(match string) string {
+		// Extract the URL (remove quotes)
+		url := match[1 : len(match)-1]
+
+		// Only rewrite URLs that match your original domain
+		if strings.HasPrefix(url, originalDomain) {
+			// Strip original domain and rebuild with gateway
+			path := strings.TrimPrefix(url, originalDomain)
+			path = strings.TrimLeft(path, "/")
+			newURL := types.GatewayDomain + "/" + serviceName + "/" + path
+			return `"` + newURL + `"`
+		}
+
+		// Return unchanged if it's an external URL
+		return match
+	})
+
+	return []byte(result)
+}
+
+
+package service
+
+import (
+	"bytes"
+	"crypto/tls"
+	"fmt"
+	"io"
+	normalLog "log"
+	"strconv"
+	"strings"
+
+	"github.com/go-kit/log"
+
+	"net/http"
+	"net/http/httputil"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/system"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+)
+
+type Service interface {
+	Serve(*types.Authenticator) (*types.Authenticator, error)
+	GetServiceName() string
+	GetServiceId() string
+	GetServiceMachineName() string
+	GetProxy() *httputil.ReverseProxy
+}
+
+type BasicService struct {
+	Endpoint           *types.Endpoint
+	ServiceName        string
+	ServiceMachineName string
+	ServiceId          string
+	Proxy              *httputil.ReverseProxy
+}
+
+func (srvc *BasicService) GetServiceName() string {
+	return srvc.ServiceName
+}
+func (srvc *BasicService) GetServiceId() string {
+	return srvc.ServiceId
+}
+func (srvc *BasicService) GetServiceMachineName() string {
+	return srvc.ServiceMachineName
+}
+func (srvc *BasicService) GetProxy() *httputil.ReverseProxy {
+	return srvc.Proxy
+}
+
+func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator, error) {
+	if auth.Service != srvc.ServiceMachineName {
+		normalLog.Println("Proxy not found")
+		return auth, fmt.Errorf("service not found")
+	}
+	proxy := *srvc.Proxy
+	previousModifyResponse := proxy.ModifyResponse
+	newProxy := &proxy
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		contentType := resp.Header.Get("Content-Type")
+
+		encoding := resp.Header.Get("Content-Encoding")
+		originalEncoding := encoding // remember it for recompression
+
+		decompressed, err := decompressBody(resp.Body, encoding)
+		if err != nil {
+			return err
+		}
+		_ = resp.Body.Close()
+
+		// Remove encoding so we can safely modify
+		resp.Header.Del("Content-Encoding")
+		targetURL := srvc.Endpoint.URL.Scheme + "://" + srvc.Endpoint.URL.Host
+		if uri := srvc.Endpoint.URL.RequestURI(); uri != "/" {
+			targetURL += uri
+		}
+		var modified []byte
+		if strings.Contains(contentType, "text/html") {
+			modified = injectBaseTag(decompressed, srvc.Endpoint.MachineName, targetURL)
+		} else if strings.Contains(contentType, "text/css") {
+			modified = rewriteCSSUrlsToGateway(decompressed, srvc.Endpoint.MachineName, targetURL)
+		} else if (strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/json")) && strings.ToLower(auth.SystemLog.GetSpecialUser()) == "citizen" {
+			// Add JSON URL rewriting here
+			modified = rewriteJSONUrls(decompressed, srvc.Endpoint.MachineName, targetURL)
+		} else {
+			modified = decompressed
+		}
+
+		// Recompress to match original encoding
+		var finalBody bytes.Buffer
+		if originalEncoding != "" {
+			err := compressBody(&finalBody, modified, originalEncoding)
+			if err != nil {
+				return err
+			}
+			resp.Header.Set("Content-Encoding", originalEncoding)
+		} else {
+			finalBody.Write(modified)
+		}
+
+		// Set updated body and headers
+		resp.Body = io.NopCloser(&finalBody)
+		resp.ContentLength = int64(finalBody.Len())
+		resp.Header.Set("Content-Length", strconv.Itoa(finalBody.Len()))
+
+		return nil
+	}
+	newProxy.ModifyResponse = func(response *http.Response) error {
+		if previousModifyResponse != nil {
+			if err := previousModifyResponse(response); err != nil {
+				return err
+			}
+		}
+		auth.Code = &response.StatusCode
+		return nil
+	}
+	normalLog.Println("this is the proxy: ", srvc.Proxy)
+	auth.Proxy = &proxy
+	return auth, nil
+}
+
+func NewBasicService(endPoint *types.Endpoint) *BasicService {
+	proxy := httputil.NewSingleHostReverseProxy(endPoint.URL)
+	proxy.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	proxy.Director = func(r *http.Request) {
+		r.URL.Scheme = endPoint.URL.Scheme
+		r.URL.Host = endPoint.URL.Host
+		r.Host = endPoint.URL.Host
+		r.URL.Path = types.RefineUrl(endPoint.URL.Path + "/" + r.URL.Path)
+		if ua := r.Header.Get("User-Agent"); ua != "" {
+			r.Header.Set("User-Agent", ua)
+		}
+	}
+	return &BasicService{
+		Endpoint:           endPoint,
+		ServiceName:        endPoint.ServiceName,
+		ServiceMachineName: endPoint.MachineName,
+		ServiceId:          endPoint.ServiceId,
+		Proxy:              proxy,
+	}
+}
+
+// func NewProducer() (*kafka.Producer, error) {
+// 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
+// 		"bootstrap.servers": "localhost",
+// 	})
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to create the producer: %s", err.Error())
+// 	}
+// 	go func() {
+// 		for e := range producer.Events() {
+// 			switch ev := e.(type) {
+// 			case *kafka.Message:
+// 				if ev.TopicPartition.Error != nil {
+// 					normalLog.Printf("Delivery failed: %v\n ", ev.TopicPartition)
+// 				} else {
+// 					normalLog.Printf("Delivered message: to %v\n", ev.TopicPartition)
+// 				}
+// 			}
+// 		}
+// 	}()
+// 	return producer, nil
+// }
+
+func New(logger log.Logger, server *system.Server, globalMetricsHolder *types.GlobalMetricsHolder) []Service {
+	var services []Service
+	for _, endP := range server.EndPoints {
+		{
+			basicService := NewBasicService(endP)
+			service := NewLoggingMiddleware(logger, &server.Credentials)(basicService)
+			service = NewInstrumentingMiddleware(globalMetricsHolder)(service)
+			services = append(services, service)
+		}
+
+	}
+	return services
+}
+
+
+package serviceEndpoint
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/go-kit/kit/endpoint"
+	"github.com/go-kit/kit/metrics"
+	"github.com/go-kit/log"
+)
+
+func InstrumentingMiddleware(duration metrics.Histogram) endpoint.Middleware {
+	return func(e endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			defer func(begin time.Time) {
+				duration.With("success", fmt.Sprint(err == nil)).Observe(time.Since(begin).Seconds())
+			}(time.Now())
+			return e(ctx, request)
+		}
+	}
+}
+
+func LoggingMiddleware(logger log.Logger) endpoint.Middleware {
+	return func(e endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			defer func(begin time.Time) {
+				logger.Log("transport_error", err, "took", time.Since(begin))
+			}(time.Now())
+			return e(ctx, request)
+		}
+	}
+}
+
+
+package serviceEndpoint
+
+import (
+	"context"
+	"time"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/service"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+	"github.com/go-kit/kit/circuitbreaker"
+	"github.com/go-kit/kit/endpoint"
+	"github.com/go-kit/kit/metrics"
+	"github.com/go-kit/kit/ratelimit"
+	"github.com/go-kit/log"
+	"github.com/sony/gobreaker"
+	"golang.org/x/time/rate"
+)
+
+type Set struct {
+	ServiceMachineName string
+	ServiceEndpoint    endpoint.Endpoint
+}
+
+func New(service service.Service, logger log.Logger, duration metrics.Histogram) *Set {
+
+	var serviceEndpoint endpoint.Endpoint
+	{
+		serviceEndpoint = MakeServiceEndpoint(service)
+		serviceEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), 20))(serviceEndpoint)
+		serviceEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{}))(serviceEndpoint)
+		serviceEndpoint = LoggingMiddleware(log.With(logger, "method", service.GetServiceName()))(serviceEndpoint)
+		serviceEndpoint = InstrumentingMiddleware(duration.With("method", service.GetServiceName()))(serviceEndpoint)
+
+	}
+	return &Set{
+		ServiceEndpoint:    serviceEndpoint,
+		ServiceMachineName: service.GetServiceMachineName(),
+	}
+}
+
+func MakeServiceEndpoint(service service.Service) endpoint.Endpoint {
+	return func(ctc context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(*types.Authenticator)
+		return service.Serve(req)
+	}
+}
+
+
+package serviceTransport
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	normalLog "log"
+	"net/http"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/serviceEndpoint"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/system"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+	"github.com/go-kit/kit/transport"
+	httptransport "github.com/go-kit/kit/transport/http"
+	"github.com/go-kit/log"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+func errorEncoder(ctx context.Context, err error, w http.ResponseWriter) {
+	data := map[string]string{"message": err.Error()}
+	switch err.Error() {
+	case "authentication failed":
+		w.WriteHeader(http.StatusUnauthorized)
+	case "service not found":
+		w.WriteHeader(http.StatusNotFound)
+	case "service error":
+		w.WriteHeader(http.StatusInternalServerError)
+	case "service unauthorized":
+		w.WriteHeader(http.StatusUnauthorized)
+	default:
+		break
+	}
+	json.NewEncoder(w).Encode(data)
+	normalLog.Println("This is coming from the error Encoder -> ", err)
+}
+
+func NewHTTPHandler(sets []*serviceEndpoint.Set, server *system.Server, logger log.Logger) http.Handler {
+	options := []httptransport.ServerOption{
+		httptransport.ServerErrorEncoder(errorEncoder),
+		httptransport.ServerErrorHandler(transport.NewLogErrorHandler(logger)),
+	}
+
+	m := http.NewServeMux()
+	for _, set := range sets {
+		fmt.Println("/" + set.ServiceMachineName)
+		m.Handle("/"+set.ServiceMachineName+"/", httptransport.NewServer(
+			set.ServiceEndpoint,
+			makeDecoderHttpServiceRequest(server),
+			makeEncoderHttpServiceResponse(server),
+			options...,
+		))
+	}
+	m.Handle("/promMetrics", promhttp.Handler())
+
+	return m
+
+}
+
+func makeDecoderHttpServiceRequest(server *system.Server) httptransport.DecodeRequestFunc {
+	return func(ctx context.Context, request *http.Request) (req interface{}, err error) {
+		auth := types.NewAuthenticator(request)
+		normalLog.Println(auth.Request.URL)
+		if err := auth.PopulateAuthenticate(&server.EndPoints, &server.Credentials); err != nil {
+			return nil, err
+		}
+		return auth, nil
+	}
+}
+func makeEncoderHttpServiceResponse(server *system.Server) httptransport.EncodeResponseFunc {
+	return func(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+		auth := response.(*types.Authenticator)
+		// user := auth.SystemLog.GetSpecialUser()
+		// if !(user == "manager" || user == "admin" || user == "grantee") {
+		// 	previousFunc := auth.Proxy.ModifyResponse
+		// 	auth.Proxy.ModifyResponse = func(resp *http.Response) error {
+		// 		if previousFunc != nil {
+		// 			if err := previousFunc(resp); err != nil {
+		// 				return err
+		// 			}
+		// 		}
+		// 		contentType := resp.Header.Get("Content-Type")
+		// 		// Only process text-based responses
+		// 		if !(strings.Contains(contentType, "application/json")) {
+		// 			return nil // Skip binary or irrelevant types (e.g., images, PDF, etc.)
+		// 		}
+		// 		// Read and close the original body
+		// 		bodyBytes, err := io.ReadAll(resp.Body)
+		// 		if err != nil {
+		// 			return err
+		// 		}
+		// 		resp.Body.Close()
+		// 		modifiedBody := string(bodyBytes)
+		// 		// Replace all occurrences of internal service URLs with gateway paths
+		// 		for _, endPoint := range server.EndPoints {
+		// 			targetURL := endPoint.URL.Scheme + "://" + endPoint.URL.Host
+		// 			if uri := endPoint.URL.RequestURI(); uri != "/" {
+		// 				targetURL += uri
+		// 			}
+		// 			gatewayPath := "http://127.0.0.1:8020/" + endPoint.MachineName
+		// 			modifiedBody = strings.ReplaceAll(modifiedBody, targetURL, gatewayPath)
+		// 		}
+		// 		// Reset response body with modified content
+		// 		resp.Body = io.NopCloser(bytes.NewBufferString(modifiedBody))
+		// 		resp.ContentLength = int64(len(modifiedBody))
+		// 		resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedBody)))
+		// 		return nil
+		// 	}
+		// }
+		// Serve through proxy
+		auth.Proxy.ServeHTTP(w, auth.Request)
+		return nil
+	}
+}
+
+// func makeEncoderHttpServiceResponse(server *system.Server) httptransport.EncodeResponseFunc {
+// 	return func(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+// 		auth := response.(*types.Authenticator)
+// 		// alterBody(auth.Proxy)
+// 		previousFunc := auth.Proxy.ModifyResponse
+// 		auth.Proxy.ModifyResponse = func(resp *http.Response) error {
+// 			if previousFunc != nil {
+// 				previousFunc(resp)
+// 			}
+// 			contentType := resp.Header.Get("Content-Type")
+// 			if !strings.HasPrefix(contentType, "text/") && !strings.Contains(contentType, "html") {
+// 				return nil // skip non-text responses
+// 			}
+
+// 			// Read the body
+// 			bodyBytes, err := io.ReadAll(resp.Body)
+// 			if err != nil {
+// 				return err
+// 			}
+// 			resp.Body.Close()
+// 			modifiedBody := string(bodyBytes)
+// 			// Replace all links starting with oldDomain
+// 			for _, endPoint := range server.EndPoints {
+// 				modifiedBody = strings.ReplaceAll(modifiedBody, endPoint.URL.Scheme+"://"+endPoint.URL.Host+endPoint.URL.RequestURI(), "http://127.0.0.1:8020/"+endPoint.MachineName)
+// 			}
+
+// 			// Replace the body with the modified content
+// 			resp.Body = io.NopCloser(bytes.NewBufferString(modifiedBody))
+// 			resp.ContentLength = int64(len(modifiedBody))
+// 			resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedBody)))
+// 			return nil
+// 		}
+// 		auth.Proxy.ServeHTTP(w, auth.Request)
+// 		return nil
+// 	}
+// }
+
+// func encodeHttpServiceResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+// 	auth := response.(*types.Authenticator)
+// 	// alterBody(auth.Proxy)
+// 	alterBody(auth)
+// 	auth.Proxy.ServeHTTP(w, auth.Request)
+// 	return nil
+// }
+
+// func alterBody(auth *types.Authenticator) {
+// 	auth.Proxy.ModifyResponse = makeAlterBodyFunc(auth.Proxy, auth.ServiceMachineName)
+// }
+
+// func makeAlterBodyFunc(proxy *httputil.ReverseProxy, serviceMachineName string) func(r *http.Response) error {
+// 	previousFunc := proxy.ModifyResponse
+// 	return func(resp *http.Response) error {
+// 		if previousFunc != nil {
+// 			previousFunc(resp)
+// 		}
+// 		// Only modify text-based responses
+// 		contentType := resp.Header.Get("Content-Type")
+// 		if !strings.HasPrefix(contentType, "text/") && !strings.Contains(contentType, "html") {
+// 			return nil // skip non-text responses
+// 		}
+
+// 		// Read the body
+// 		bodyBytes, err := io.ReadAll(resp.Body)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		resp.Body.Close()
+
+// 		// Replace all links starting with oldDomain
+// 		modifiedBody := strings.ReplaceAll(string(bodyBytes), oldDomain, "http://127.0.0.1:8020/"+serviceMachineName)
+
+// 		// Replace the body with the modified content
+// 		resp.Body = io.NopCloser(bytes.NewBufferString(modifiedBody))
+// 		resp.ContentLength = int64(len(modifiedBody))
+// 		resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedBody)))
+// 		return nil
+// 	}
+// }
+
+// func createResponseModifier(gatewayHost, gatewayBase, token string, server *server.Server, previousFunc func(*http.Response) error) func(*http.Response) error {
+// 	// Token is passed as a parameter
+
+// 	return func(resp *http.Response) error {
+// 		// Check if content type should be processed
+// 		err := previousFunc(resp); err != nil{
+// 			return err
+// 		}
+// 		contentType := resp.Header.Get("Content-Type")
+// 		shouldProcess := strings.Contains(contentType, "text/html") ||
+// 			strings.Contains(contentType, "text/css") ||
+// 			strings.Contains(contentType, "application/javascript") ||
+// 			strings.Contains(contentType, "application/json") ||
+// 			strings.Contains(contentType, "text/xml")
+
+// 		if !shouldProcess {
+// 			return nil
+// 		}
+
+// 		// Read the original response body
+// 		body, err := io.ReadAll(resp.Body)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		resp.Body.Close()
+
+// 		// Function to add token to URL
+// 		addTokenToURL := func(urlStr string) string {
+// 			parsedURL, err := url.Parse(urlStr)
+// 			if err != nil {
+// 				// If URL parsing fails, just append the token as a query parameter
+// 				if strings.Contains(urlStr, "?") {
+// 					return urlStr + "&token=" + token
+// 				}
+// 				return urlStr + "?token=" + token
+// 			}
+
+// 			q := parsedURL.Query()
+// 			q.Set("token", token)
+// 			parsedURL.RawQuery = q.Encode()
+// 			return parsedURL.String()
+// 		}
+
+// 		// Replace absolute URLs (with protocol)
+// 		// First, create a replacement that includes the token
+// 		for _, endPoint := range server.EndPoints {
+// 			targetURL := endPoint.URL.Scheme + "://" + endPoint.URL.Host
+// 			if uri := endPoint.URL.RequestURI(); uri != "/" {
+// 					targetURL += uri
+// 			}
+// 			tokenizedGatewayURL := addTokenToURL(gatewayBase)
+// 			modifiedBody := bytes.ReplaceAll(body, []byte(targetURL), []byte(tokenizedGatewayURL))
+// 			targetHost := endPoint.URL.Host
+// 			if uri := endPoint.URL.RequestURI(); uri != "/" {
+// 				targetHost += uri
+// 			}
+// 			// Handle protocol-relative URLs with token
+// 			protocolRelativePattern := regexp.MustCompile(`(//)` + targetHost + `(/[^"'\s>]*)`)
+// 			modifiedBody = protocolRelativePattern.ReplaceAllFunc(modifiedBody, func(match []byte) []byte {
+// 				parts := protocolRelativePattern.FindSubmatch(match)
+// 				if len(parts) >= 3 {
+// 					path := string(parts[2])
+// 					// Create a dummy URL to use the addTokenToURL function
+// 					dummyURL := "http:" + string(parts[1]) + types.RefineUrl(gatewayHost + path)
+// 					tokenizedURL := addTokenToURL(dummyURL)
+// 					// Remove the protocol part added for parsing
+// 					tokenizedURLWithoutProtocol := strings.TrimPrefix(tokenizedURL, "http:")
+// 					return []byte(tokenizedURLWithoutProtocol)
+// 				}
+// 				return match
+// 			})
+
+// 			// Replace URLs in href and src attributes
+// 			hrefSrcPattern := regexp.MustCompile(`(href|src)=["'](?:https?:)?//` + targetHost + `(/[^"']*)(["'])`)
+// 			modifiedBody = hrefSrcPattern.ReplaceAllFunc(modifiedBody, func(match []byte) []byte {
+// 				parts := hrefSrcPattern.FindSubmatch(match)
+// 				if len(parts) >= 4 {
+// 					attr := string(parts[1])
+// 					path := string(parts[2])
+// 					quote := string(parts[3])
+
+// 					// Create URL with token
+// 					fullURL := "https://" + types.RefineUrl(gatewayHost + path)
+// 					tokenizedURL := addTokenToURL(fullURL)
+
+// 					// Remove protocol for protocol-relative URLs if original was protocol-relative
+// 					if !bytes.Contains(match, []byte("https:")) && !bytes.Contains(match, []byte("http:")) {
+// 						tokenizedURL = strings.TrimPrefix(tokenizedURL, "https:")
+// 					}
+
+// 					return []byte(attr + "=" + quote + tokenizedURL + quote)
+// 				}
+// 				return match
+// 			})
+// 		}
+
+// 		// Replace absolute paths (starting with /)
+// 		absolutePathPattern := regexp.MustCompile(`(href|src|action)=["'](/[^"'?]*)([?][^"']*)?["']`)
+// 		modifiedBody = absolutePathPattern.ReplaceAllFunc(modifiedBody, func(match []byte) []byte {
+// 			parts := absolutePathPattern.FindSubmatch(match)
+// 			if len(parts) >= 3 {
+// 				attr := string(parts[1])
+// 				path := string(parts[2])
+// 				query := ""
+// 				quote := `"`
+
+// 				if len(parts) >= 4 && len(parts[3]) > 0 {
+// 					query = string(parts[3])
+// 				}
+// 				if bytes.HasSuffix(match, []byte("'")) {
+// 					quote = "'"
+// 				}
+
+// 				// Add token to query
+// 				if query != "" {
+// 					query = query + "&token=" + token
+// 				} else {
+// 					query = "?token=" + token
+// 				}
+
+// 				return []byte(attr + "=" + quote + path + query + quote)
+// 			}
+// 			return match
+// 		})
+
+// 		for _, endPoint := range server.EndPoints {
+// 			targetHost := endPoint.URL.Host
+// 			if uri := endPoint.URL.RequestURI(); uri != "/" {
+// 				targetHost += uri
+// 			}
+
+// 			// Use regex for more complex URL replacements in HTML/JS
+// 			if strings.Contains(contentType, "text/html") || strings.Contains(contentType, "application/javascript") {
+// 				// Replace URLs in various formats that might appear in HTML or JS
+// 				// For example: domain: "targetHost" or domain: 'targetHost'
+// 				domainPattern := regexp.MustCompile(`(['"]\s*domain\s*['"]?\s*[:=]\s*['"])` + targetHost + `(['"])`)
+// 				modifiedBody = domainPattern.ReplaceAll(modifiedBody, []byte("${1}"+gatewayHost+"${2}"))
+
+// 				// Replace API endpoints or other patterns specific to your application
+// 				apiPattern := regexp.MustCompile(`(api\.url\s*=\s*['"])` + targetHost + `(['"])`)
+// 				modifiedBody = apiPattern.ReplaceAll(modifiedBody, []byte("${1}"+gatewayHost+"${2}"))
+
+// 				// Handle JavaScript URL constructions
+// 				jsURLPattern := regexp.MustCompile(`(["'])https?://` + targetHost + `(/[^"']+)(["'])`)
+// 				modifiedBody = jsURLPattern.ReplaceAllFunc(modifiedBody, func(match []byte) []byte {
+// 					parts := jsURLPattern.FindSubmatch(match)
+// 					if len(parts) >= 4 {
+// 						quote := string(parts[1])
+// 						path := string(parts[2])
+// 						endQuote := string(parts[3])
+
+// 						fullURL := "https://" + types.RefineUrl(gatewayHost + path)
+// 						tokenizedURL := addTokenToURL(fullURL)
+
+// 						return []byte(quote + tokenizedURL + endQuote)
+// 					}
+// 					return match
+// 				})
+// 			}
+// 		}
+// 		// Update content length and replace body
+// 		resp.ContentLength = int64(len(modifiedBody))
+// 		resp.Body = io.NopCloser(bytes.NewReader(modifiedBody))
+
+// 		// Update Location header if present (for redirects)
+// 		if location := resp.Header.Get("Location"); location != "" {
+// 			tokenizedLocation := addTokenToURL(strings.Replace(location, targetBase, gatewayBase, -1))
+// 			resp.Header.Set("Location", tokenizedLocation)
+// 		}
+
+// 		return nil
+// 	}
+// }
+
+
+package system
+
+import (
+	"encoding/json"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+
+	server "github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/Server"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
+)
+
+type Server struct {
+	id          string
+	EndPoints   types.MapEndPoint
+	Credentials types.ManagerLogInCredentials
+}
+
+func (srv *Server) FetchServices() *[]types.PublicService {
+	req, err := http.NewRequest("GET", types.CentralDomain+"manager/service/", nil)
+	if err != nil {
+		log.Fatal("ServerStartUp::\n Failed to generate request(fetchServices)")
+	}
+	req.Header.Set("Authorization", "Bearer "+srv.Credentials.Access)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal("ServerStartUp::\n Failed to execute request(fetchServices)")
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Failed to decode boby (fetchServices)")
+	}
+	var services []types.PublicService
+	if err := json.Unmarshal(body, &services); err != nil {
+		log.Fatal("ServerStartUp::\n Failed to decode response(fetchServices)\n" + err.Error())
+	}
+	return &services
+}
+
+func (srv *Server) GenerateEndPoints() {
+	services := srv.FetchServices()
+	camEndpoint, err := NewEndpoint("c_a_m", "c_a_m", "", types.Central_access_managementUrl, []string{"GET", "PATCH", "DELETE", "POST"}, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	endPoints := map[string]*types.Endpoint{}
+	endPoints[camEndpoint.MachineName] = camEndpoint
+
+	for _, service := range *services {
+		endpoint, err := NewEndpoint(service.Title, service.MachineName, "", service.URL, service.Methods, service.PublicId)
+		if err != nil {
+			log.Fatal("Failed to create endpoint: \n\t" + service.String())
+		}
+		endPoints[service.MachineName] = endpoint
+	}
+	if err := server.VerifyMachineNames(endPoints); err != nil {
+		log.Fatal("Duplicate ServicesNames ")
+	}
+	srv.EndPoints = endPoints
+}
+func (srv *Server) FetchEndpoints() {
+	// endPoint1, err := NewEndpoint("server1", "service", "/service", rudiUrl, []string{"GET", "PATCH"})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// endPoint2, err := NewEndpoint("server2", "stuff", "/stuff", rudiUrl2, []string{"GET", "PATCH"})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	srv.GenerateEndPoints()
+}
+
+func NewServer() *Server {
+	server := Server{Credentials: *generateManagerCredentials()}
+	server.Credentials.StartCredentials()
+	server.FetchEndpoints()
+	return &server
+}
+func NewEndpoint(serviceName string, machineName string, fixedPath string, serviceUrl string, methods []string, id string) (*types.Endpoint, error) {
+	formattedUrl, err := url.Parse(serviceUrl)
+	if err != nil {
+		return nil, err
+	}
+	if err := verify.VerifyMethods(methods); err != nil {
+		return nil, err
+	}
+
+	return &types.Endpoint{
+		ServiceName: serviceName,
+		MachineName: machineName,
+		URL:         formattedUrl,
+		FixedPath:   fixedPath,
+		Methods:     methods,
+		ServiceId:   id,
+	}, nil
+
+}
+func generateManagerCredentials() *types.ManagerLogInCredentials {
+	return &types.ManagerLogInCredentials{
+		ManagerUserName: "A3R0",
+		ManagerPassword: "bsrvnttngjltzl",
+		Email:           "erlsontmadara@gmail.com",
+		Password:        "1234bsrvnt",
+	}
+}
+
+
+package main
+
+import (
+	"net"
+	"net/http"
+	"os"
+
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/service"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/serviceEndpoint"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/serviceTransport"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/kitGateway/system"
+	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
+	"github.com/go-kit/kit/metrics"
+	"github.com/go-kit/kit/metrics/prometheus"
+	"github.com/go-kit/log"
+	stdprometheus "github.com/prometheus/client_golang/prometheus"
+)
+
+func main() {
+	httpAddr := ":8020"
+	var logger log.Logger
+	{
+		logger = log.NewLogfmtLogger(os.Stderr)
+		logger = log.With(logger, "ts", log.DefaultTimestampUTC)
+		logger = log.With(logger, "caller", log.DefaultCaller)
+	}
+	var duration metrics.Histogram
+	{
+		duration = prometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+			Namespace: "CentralAccessGateway",
+			Subsystem: "GateWayMetrics",
+			Name:      "request_duration_seconds",
+			Help:      "Request duration in seconds",
+		}, []string{"method", "success"})
+	}
+	var endPoints []*serviceEndpoint.Set
+	globalMetricsHolder := types.NewGlobalMetricsHolder()
+	var (
+		httpListener, err = net.Listen("tcp", httpAddr)
+		server            = system.NewServer()
+		basicServices     = service.New(logger, server, globalMetricsHolder)
+	)
+	for _, basicService := range basicServices {
+		endPoints = append(endPoints, serviceEndpoint.New(basicService, logger, duration))
+	}
+	httpHandler := serviceTransport.NewHTTPHandler(endPoints, server, logger)
+
+	if err != nil {
+		logger.Log("transport", "HTTP", "during", "Listen", "err", err)
+		os.Exit(1)
+	}
+	logger.Log("transport", "HTTP", "addr", httpAddr)
+	err = http.Serve(httpListener, httpHandler)
+	if err != nil {
+		panic(err)
+	}
+}
+

@@ -74,7 +74,7 @@ class AbstractModelViewSet(ModelViewSet):
             self.perform_create(serializer=serializer)
             return Response(serializer.data, HTTP_201_CREATED)
         except(IntegrityError) as er:
-            raise ValidationError('Pick Another Citizen')
+            raise ValidationError('Invalid Data')
 
 class AbstractGranteeModelViewSet(AbstractModelViewSet):
     http_method_names = ('patch', 'get', 'post')
@@ -99,10 +99,14 @@ class AbstractGranteeModelViewSet(AbstractModelViewSet):
 
     def create(self, request, *args, **kwargs):
         pprint(request.data)
-        serializer : AbstractModelSerializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer=serializer)
-        return Response(serializer.data, HTTP_201_CREATED)
+        try:
+                
+            serializer : AbstractModelSerializer = self.serializer_class(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer=serializer)
+            return Response(serializer.data, HTTP_201_CREATED)
+        except(IntegrityError) as er:
+            raise ValidationError('Invalid Data: make sure that all referenced data follows the guidelines')
 
 class AbstractAdministratorModelViewSet(AbstractGranteeModelViewSet):
     def get_authenticators(self):

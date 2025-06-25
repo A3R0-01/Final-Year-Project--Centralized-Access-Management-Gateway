@@ -55,6 +55,55 @@ func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator
 	proxy := *srvc.Proxy
 	previousModifyResponse := proxy.ModifyResponse
 	newProxy := &proxy
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		contentType := resp.Header.Get("Content-Type")
+
+		encoding := resp.Header.Get("Content-Encoding")
+		originalEncoding := encoding // remember it for recompression
+
+		decompressed, err := decompressBody(resp.Body, encoding)
+		if err != nil {
+			return err
+		}
+		_ = resp.Body.Close()
+
+		// Remove encoding so we can safely modify
+		resp.Header.Del("Content-Encoding")
+		targetURL := srvc.Endpoint.URL.Scheme + "://" + srvc.Endpoint.URL.Host
+		if uri := srvc.Endpoint.URL.RequestURI(); uri != "/" {
+			targetURL += uri
+		}
+		var modified []byte
+		if strings.Contains(contentType, "text/html") {
+			modified = injectBaseTag(decompressed, srvc.Endpoint.MachineName, targetURL)
+		} else if strings.Contains(contentType, "text/css") {
+			modified = rewriteCSSUrlsToGateway(decompressed, srvc.Endpoint.MachineName, targetURL)
+		} else if (strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/json")) && strings.ToLower(auth.SystemLog.GetSpecialUser()) == "citizen" {
+			// Add JSON URL rewriting here
+			modified = rewriteJSONUrls(decompressed, srvc.Endpoint.MachineName, targetURL)
+		} else {
+			modified = decompressed
+		}
+
+		// Recompress to match original encoding
+		var finalBody bytes.Buffer
+		if originalEncoding != "" {
+			err := compressBody(&finalBody, modified, originalEncoding)
+			if err != nil {
+				return err
+			}
+			resp.Header.Set("Content-Encoding", originalEncoding)
+		} else {
+			finalBody.Write(modified)
+		}
+
+		// Set updated body and headers
+		resp.Body = io.NopCloser(&finalBody)
+		resp.ContentLength = int64(finalBody.Len())
+		resp.Header.Set("Content-Length", strconv.Itoa(finalBody.Len()))
+
+		return nil
+	}
 	newProxy.ModifyResponse = func(response *http.Response) error {
 		if previousModifyResponse != nil {
 			if err := previousModifyResponse(response); err != nil {
@@ -82,52 +131,6 @@ func NewBasicService(endPoint *types.Endpoint) *BasicService {
 		if ua := r.Header.Get("User-Agent"); ua != "" {
 			r.Header.Set("User-Agent", ua)
 		}
-	}
-	proxy.ModifyResponse = func(resp *http.Response) error {
-		contentType := resp.Header.Get("Content-Type")
-
-		encoding := resp.Header.Get("Content-Encoding")
-		originalEncoding := encoding // remember it for recompression
-
-		decompressed, err := decompressBody(resp.Body, encoding)
-		if err != nil {
-			return err
-		}
-		_ = resp.Body.Close()
-
-		// Remove encoding so we can safely modify
-		resp.Header.Del("Content-Encoding")
-		targetURL := endPoint.URL.Scheme + "://" + endPoint.URL.Host
-		if uri := endPoint.URL.RequestURI(); uri != "/" {
-			targetURL += uri
-		}
-		var modified []byte
-		if strings.Contains(contentType, "text/html") {
-			modified = injectBaseTag(decompressed, endPoint.MachineName, targetURL)
-		} else if strings.Contains(contentType, "text/css") {
-			modified = rewriteCSSUrlsToGateway(decompressed, endPoint.MachineName)
-		} else {
-			modified = decompressed
-		}
-
-		// Recompress to match original encoding
-		var finalBody bytes.Buffer
-		if originalEncoding != "" {
-			err := compressBody(&finalBody, modified, originalEncoding)
-			if err != nil {
-				return err
-			}
-			resp.Header.Set("Content-Encoding", originalEncoding)
-		} else {
-			finalBody.Write(modified)
-		}
-
-		// Set updated body and headers
-		resp.Body = io.NopCloser(&finalBody)
-		resp.ContentLength = int64(finalBody.Len())
-		resp.Header.Set("Content-Length", strconv.Itoa(finalBody.Len()))
-
-		return nil
 	}
 	return &BasicService{
 		Endpoint:           endPoint,

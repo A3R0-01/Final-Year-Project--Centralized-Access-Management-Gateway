@@ -3,6 +3,7 @@ package service
 import (
 	"compress/flate"
 	"compress/gzip"
+	"encoding/json"
 	"io"
 	"regexp"
 	"strings"
@@ -50,9 +51,8 @@ func injectBaseTag(html []byte, serviceMachineName string, originalDomain string
 	// return append(html[:insertPos], append([]byte(baseTag), html[insertPos:]...)...)
 }
 
-func rewriteCSSUrlsToGateway(css []byte, serviceName string) []byte {
-	gatewayDomain := "http://www.gateway.com"
-	originalDomain := "http://www.somesite.com"
+func rewriteCSSUrlsToGateway(css []byte, serviceName string, originalDomain string) []byte {
+	gatewayDomain := types.GatewayDomain
 
 	re := regexp.MustCompile(`url\(["']?(.*?)["']?\)`)
 
@@ -101,6 +101,49 @@ func decompressBody(body io.Reader, encoding string) ([]byte, error) {
 	}
 }
 
+func rewriteJSONUrlsRecursive(jsonData []byte, serviceName, originalDomain string) []byte {
+	var data interface{}
+	if err := json.Unmarshal(jsonData, &data); err != nil {
+		return jsonData
+	}
+
+	rewritten := rewriteURLsInValue(data, serviceName, originalDomain)
+
+	result, err := json.Marshal(rewritten)
+	if err != nil {
+		return jsonData // fallback to original
+	}
+
+	return result
+}
+
+func rewriteURLsInValue(value interface{}, serviceName, originalDomain string) interface{} {
+	switch v := value.(type) {
+	case map[string]interface{}:
+		result := make(map[string]interface{})
+		for k, val := range v {
+			result[k] = rewriteURLsInValue(val, serviceName, originalDomain)
+		}
+		return result
+	case []interface{}:
+		result := make([]interface{}, len(v))
+		for i, val := range v {
+			result[i] = rewriteURLsInValue(val, serviceName, originalDomain)
+		}
+		return result
+	case string:
+		// Check if this string looks like a URL and rewrite it
+		if strings.HasPrefix(v, originalDomain) {
+			path := strings.TrimPrefix(v, originalDomain)
+			path = strings.TrimLeft(path, "/")
+			return types.GatewayDomain + "/" + serviceName + "/" + path
+		}
+		return v
+	default:
+		return v
+	}
+}
+
 func compressBody(w io.Writer, data []byte, encoding string) error {
 	switch encoding {
 	case "gzip":
@@ -125,4 +168,38 @@ func compressBody(w io.Writer, data []byte, encoding string) error {
 		_, err := w.Write(data)
 		return err
 	}
+}
+
+func rewriteJSONUrls(jsonData []byte, serviceName, originalDomain string) []byte {
+	// Parse JSON to ensure we don't break structure
+	var data interface{}
+	if err := json.Unmarshal(jsonData, &data); err != nil {
+		// If JSON is invalid, return as-is
+		return jsonData
+	}
+
+	// Convert back to string for regex processing
+	jsonStr := string(jsonData)
+
+	// Match URLs in JSON values (handles both quoted strings and unescaped URLs)
+	urlRegex := regexp.MustCompile(`"(https?://[^"]+)"`)
+
+	result := urlRegex.ReplaceAllStringFunc(jsonStr, func(match string) string {
+		// Extract the URL (remove quotes)
+		url := match[1 : len(match)-1]
+
+		// Only rewrite URLs that match your original domain
+		if strings.HasPrefix(url, originalDomain) {
+			// Strip original domain and rebuild with gateway
+			path := strings.TrimPrefix(url, originalDomain)
+			path = strings.TrimLeft(path, "/")
+			newURL := types.GatewayDomain + "/" + serviceName + "/" + path
+			return `"` + newURL + `"`
+		}
+
+		// Return unchanged if it's an external URL
+		return match
+	})
+
+	return []byte(result)
 }
