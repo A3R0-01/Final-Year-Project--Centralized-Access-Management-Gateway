@@ -34,7 +34,7 @@ class GranteeRequestViewSet(AbstractGranteeModelViewSet):
 
 class AdministratorRequestViewSet(AbstractAdministratorModelViewSet):
     serializer_class = AdministratorRequestSerializer
-    http_method_names = ('get')
+    http_method_names = ('get', 'delete')
 
     def get_queryset(self):
         if hasattr(self.request.user, 'administrator'):

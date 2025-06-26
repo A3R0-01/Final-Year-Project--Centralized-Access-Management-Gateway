@@ -15,7 +15,7 @@ class IsSiteManager(JWTAuthentication):
             # siteManager: SiteManager = authenticatedUser.siteManager
             # if siteManager.ManagerUserName == ManagerUserName and siteManager.check_password(ManagerPassword):
             return authenticatedUser, token
-        AuthenticationFailed('Invalid Credentials. Please Login')
+        raise AuthenticationFailed('Invalid Credentials. Please Login')
 
 class IsAdministrator(JWTAuthentication):
     def authenticate(self, request):

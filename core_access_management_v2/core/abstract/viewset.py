@@ -3,7 +3,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, ValidationError as Validation2
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from .serializers import AbstractModelSerializer
 from .models import AbstractManager
@@ -74,17 +74,17 @@ class AbstractModelViewSet(ModelViewSet):
             self.perform_create(serializer=serializer)
             return Response(serializer.data, HTTP_201_CREATED)
         except(IntegrityError) as er:
-            raise ValidationError('Invalid Data')
+            raise Validation2('Invalid Data')
 
 class AbstractGranteeModelViewSet(AbstractModelViewSet):
     http_method_names = ('patch', 'get', 'post')
     permission_classes = (IsAuthenticated,)
+
     def get_authenticators(self):
         customAuthenticators = [IsGrantee()]
         return customAuthenticators
 
     def get_object(self):
-
         id = self.kwargs['pk']
         try:
             obj = self.get_queryset().get(PublicId=id)
@@ -98,15 +98,14 @@ class AbstractGranteeModelViewSet(AbstractModelViewSet):
         return self.serializer_class.Meta.model.objects.filter(**queries)
 
     def create(self, request, *args, **kwargs):
-        pprint(request.data)
         try:
                 
             serializer : AbstractModelSerializer = self.serializer_class(data=request.data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer=serializer)
             return Response(serializer.data, HTTP_201_CREATED)
-        except(IntegrityError) as er:
-            raise ValidationError('Invalid Data: make sure that all referenced data follows the guidelines')
+        except(IntegrityError):
+            raise Validation2('Invalid Data: make sure that all referenced data follows the guidelines')
 
 class AbstractAdministratorModelViewSet(AbstractGranteeModelViewSet):
     def get_authenticators(self):

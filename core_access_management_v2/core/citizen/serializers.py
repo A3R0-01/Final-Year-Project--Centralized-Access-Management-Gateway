@@ -25,7 +25,7 @@ class GranteeCitizenModelSerializer(CitizenSerializer):
     class Meta:
         model : Citizen = Citizen
         fields = [
-            'id', 'UserName', 'Email', 'FirstName', 'SecondName', 'Surname', 'DOB', 'NationalId','is_active',
+            'id', 'UserName', 'Email', 'FirstName', 'SecondName', 'Surname', 'DOB', 'NationalId', 'password','is_active',
             'Updated', 'Created',
         ]
         read_only_fields = [

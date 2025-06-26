@@ -5,6 +5,8 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.models import update_last_login
 from core.citizen.serializers import CitizenSerializer
 from core.siteManager.serializers import SiteManagerSerializer
+from core.administrator.serializers import AdministratorModelSerializer
+from core.grantee.serializers import GranteeSerializer
 from pprint import pprint
 
 INVALID_DATA = {
@@ -68,7 +70,7 @@ class LoginAdministratorSerializer(TokenObtainPairSerializer):
         if hasattr(self.user, 'administrator'):
             # ManagerPassword, ManagerUserName = attrs['ManagerPassword'], attrs['ManagerUserName']
             if self.user.administrator.check_password(self.AdministratorPassword) and self.AdministratorUserName == self.user.administrator.AdministratorUserName:
-                data['user'] = SiteManagerSerializer(self.user.administrator).data
+                data['user'] = AdministratorModelSerializer(self.user.administrator).data
                 data['refresh'] = str(refresh)
                 data['access'] = str(refresh.access_token)
                 if api_settings.UPDATE_LAST_LOGIN:
@@ -92,7 +94,7 @@ class LoginGranteeSerializer(TokenObtainPairSerializer):
         if hasattr(self.user, 'grantee'):
             # ManagerPassword, ManagerUserName = attrs['ManagerPassword'], attrs['ManagerUserName']
             if self.user.grantee.check_password(self.GranteePassword) and self.GranteeUserName == self.user.grantee.GranteeUserName:
-                data['user'] = SiteManagerSerializer(self.user.grantee).data
+                data['user'] = GranteeSerializer(self.user.grantee).data
                 data['refresh'] = str(refresh)
                 data['access'] = str(refresh.access_token)
                 if api_settings.UPDATE_LAST_LOGIN:
