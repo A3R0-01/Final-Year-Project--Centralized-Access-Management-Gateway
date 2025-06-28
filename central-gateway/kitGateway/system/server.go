@@ -42,7 +42,7 @@ func (srv *Server) FetchServices() *[]types.PublicService {
 
 func (srv *Server) GenerateEndPoints() {
 	services := srv.FetchServices()
-	camEndpoint, err := NewEndpoint("c_a_m", "c_a_m", "", types.Central_access_managementUrl, []string{"GET", "PATCH", "DELETE", "POST"}, "")
+	camEndpoint, err := NewEndpoint("api", "api", "", types.Central_access_managementUrl, []string{"GET", "PATCH", "DELETE", "POST"}, "")
 	if err != nil {
 		log.Fatal(err)
 	}

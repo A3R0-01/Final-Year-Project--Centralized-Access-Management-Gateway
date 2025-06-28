@@ -52,14 +52,14 @@ func NewHTTPHandler(sets []*serviceEndpoint.Set, server *system.Server, logger l
 	}
 	m.Handle("/promMetrics", promhttp.Handler())
 
-	return m
+	return corsMiddleware(m)
 
 }
 
 func makeDecoderHttpServiceRequest(server *system.Server) httptransport.DecodeRequestFunc {
 	return func(ctx context.Context, request *http.Request) (req interface{}, err error) {
 		auth := types.NewAuthenticator(request)
-		normalLog.Println(auth.Request.URL)
+		normalLog.Println(auth.Request.Header.Get("Authorization"))
 		if err := auth.PopulateAuthenticate(&server.EndPoints, &server.Credentials); err != nil {
 			return nil, err
 		}
@@ -69,47 +69,80 @@ func makeDecoderHttpServiceRequest(server *system.Server) httptransport.DecodeRe
 func makeEncoderHttpServiceResponse(server *system.Server) httptransport.EncodeResponseFunc {
 	return func(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 		auth := response.(*types.Authenticator)
-		// user := auth.SystemLog.GetSpecialUser()
-		// if !(user == "manager" || user == "admin" || user == "grantee") {
-		// 	previousFunc := auth.Proxy.ModifyResponse
-		// 	auth.Proxy.ModifyResponse = func(resp *http.Response) error {
-		// 		if previousFunc != nil {
-		// 			if err := previousFunc(resp); err != nil {
-		// 				return err
-		// 			}
-		// 		}
-		// 		contentType := resp.Header.Get("Content-Type")
-		// 		// Only process text-based responses
-		// 		if !(strings.Contains(contentType, "application/json")) {
-		// 			return nil // Skip binary or irrelevant types (e.g., images, PDF, etc.)
-		// 		}
-		// 		// Read and close the original body
-		// 		bodyBytes, err := io.ReadAll(resp.Body)
-		// 		if err != nil {
-		// 			return err
-		// 		}
-		// 		resp.Body.Close()
-		// 		modifiedBody := string(bodyBytes)
-		// 		// Replace all occurrences of internal service URLs with gateway paths
-		// 		for _, endPoint := range server.EndPoints {
-		// 			targetURL := endPoint.URL.Scheme + "://" + endPoint.URL.Host
-		// 			if uri := endPoint.URL.RequestURI(); uri != "/" {
-		// 				targetURL += uri
-		// 			}
-		// 			gatewayPath := "http://127.0.0.1:8020/" + endPoint.MachineName
-		// 			modifiedBody = strings.ReplaceAll(modifiedBody, targetURL, gatewayPath)
-		// 		}
-		// 		// Reset response body with modified content
-		// 		resp.Body = io.NopCloser(bytes.NewBufferString(modifiedBody))
-		// 		resp.ContentLength = int64(len(modifiedBody))
-		// 		resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedBody)))
-		// 		return nil
-		// 	}
-		// }
 		// Serve through proxy
 		auth.Proxy.ServeHTTP(w, auth.Request)
 		return nil
 	}
+}
+
+// func corsMiddleware(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		origin := r.Header.Get("Origin")
+
+// 		if origin != "" {
+// 			// Dynamically allow whatever Origin is calling you
+// 			w.Header().Set("Access-Control-Allow-Origin", origin)
+// 			w.Header().Set("Vary", "Origin")
+// 		}
+
+// 		// Always allow Authorization + Content-Type headers
+// 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+// 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+// 		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+// 		// Respond to preflight OPTIONS request
+// 		if r.Method == http.MethodOptions {
+// 			w.WriteHeader(http.StatusOK)
+// 			return
+// 		}
+
+// 		// Forward real request
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
+
+// func corsMiddleware(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		origin := r.Header.Get("Origin")
+// 		if origin != "" {
+// 			// Allow any specific origin for development — lock down for production
+// 			w.Header().Set("Access-Control-Allow-Origin", origin)
+// 			w.Header().Set("Vary", "Origin")
+// 		}
+
+// 		w.Header().Set("Access-Control-Allow-Credentials", "true")
+// 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+// 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+
+// 		if r.Method == http.MethodOptions {
+// 			w.WriteHeader(http.StatusOK)
+// 			return
+// 		}
+
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+		}
+
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+
+		// Handle preflight
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // func makeEncoderHttpServiceResponse(server *system.Server) httptransport.EncodeResponseFunc {

@@ -62,7 +62,7 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string, 
 	var found = false
 	var baseModel string
 	sl.RecordId = "n/a"
-	if service["service"] == "c_a_m" {
+	if service["service"] == "api" {
 		for key, routeComponent := range parts {
 			if !found {
 				if answer, text := isBaseModel(routeComponent, secondary); !answer {
@@ -158,7 +158,7 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string, 
 }
 func (sl *SystemLog) getCitizen(request *http.Request, managerCredentials *ManagerLogInCredentials) error {
 	authenticationHeader := request.Header.Get("Authorization")
-
+	fmt.Println(authenticationHeader + "the header token")
 	req, err := http.NewRequest("GET", CentralDomain+"citizen/stuff/", nil)
 	if err != nil {
 		return err
@@ -295,6 +295,7 @@ func (sl *SystemLog) CheckSessions(managerCredentials *ManagerLogInCredentials) 
 		return fmt.Errorf("credentials decoding failed: check session")
 	}
 	found := false
+	fmt.Println(respContainer)
 	serviceSessionFound := ServiceSession{}
 	for _, serviceSession := range respContainer {
 		if serviceSession.Expired {

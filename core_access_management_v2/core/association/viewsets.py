@@ -30,7 +30,7 @@ class GranteeAssociationModelViewSet(AbstractGranteeModelViewSet):
         raise MethodNotAllowed
 
 class AdministratorAssociationModelViewSet(AbstractAdministratorModelViewSet):
-    http_method_names = ('get', 'patch', 'post')
+    http_method_names = ('get', 'patch', 'post', 'delete')
     serializer_class = AdministratorAssociationModelSerializer
 
     def get_queryset(self):
@@ -54,7 +54,7 @@ class AdministratorAssociationModelViewSet(AbstractAdministratorModelViewSet):
         raise MethodNotAllowed('You haven\'t been assigned to a department yet')
 
 class SiteManagerAssociationModelViewSet(AbstractSiteManagerModelViewSet):
-    http_method_names = ('get', 'patch', 'post')
+    http_method_names = ('get', 'patch', 'post', 'delete')
     serializer_class = SiteManagerAssociationModelSerializer
 
     @atomic

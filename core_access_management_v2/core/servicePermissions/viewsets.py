@@ -6,6 +6,7 @@ from core.publicService.models import PublicService
 from core.department.models import Department
 from core.grantee.models import Grantee
 from .serializer import PublicServicePermissionSerializer, AssociationPermissionSerializer, DepartmentPermissionSerializer
+from pprint import pprint
 
 # Create your views here.
 class SiteManagerPublicServicePermissionViewSet(AbstractSiteManagerModelViewSet):
@@ -37,18 +38,17 @@ class GranteePublicServicePermissionViewSet(AbstractGranteeModelViewSet):
     
     def create(self, request, *args, **kwargs):
         grantee = self.request.user.grantee
+        pprint(request.data)
         publicServiceId = request.data.pop('PublicService', None)
         if publicServiceId == None:
+            raise ValidationError('Please Enter Service')
+        try:
+            publicSrvc = PublicService.objects.filter(Grantee__PublicId=grantee.PublicId).get(PublicId=publicServiceId)
+            request.data['PublicService'] = publicSrvc.PublicId.hex
+        except:
             raise ValidationError('Invalid Service')
-        if hasattr(grantee, 'association'):
-            try:
-                publicSrvc =PublicService.objects.filter(Grantee=grantee).get(PublicId=publicServiceId)
-                request.data['PublicService'] = publicSrvc.PublicId.hex
-            except:
-                raise ValidationError('Invalid Service')
 
-            return super().create(request, *args, **kwargs)
-        raise ValidationError('You Do Not Belong to any Association')
+        return super().create(request, *args, **kwargs)
 
 class AdministratorPublicServicePermissionViewSet(AbstractAdministratorModelViewSet):
     http_method_names = ('get', 'patch', 'delete', 'post')

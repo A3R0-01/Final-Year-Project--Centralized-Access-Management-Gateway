@@ -7,6 +7,15 @@ services:
   #     - 8020:8020
   #   depends_on:
   #     - core_access
+  frontend:
+    build:
+      context: ./frontend
+    container_name: nextjs_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    command: npm run dev
   prometheus:
     image: prom/prometheus
     container_name: prometheus

@@ -1026,7 +1026,6 @@ class LoginGranteeSerializer(TokenObtainPairSerializer):
 
         return INVALID_DATA
 
-
 from rest_framework import serializers
 from core.citizen.serializers import CitizenSerializer, Citizen
 
@@ -1226,13 +1225,14 @@ class GranteeCitizenModelSerializer(CitizenSerializer):
     class Meta:
         model : Citizen = Citizen
         fields = [
-            'id', 'UserName', 'Email', 'FirstName', 'SecondName', 'Surname', 'DOB', 'NationalId','is_active',
+            'id', 'UserName', 'Email', 'FirstName', 'SecondName', 'Surname', 'DOB', 'NationalId', 'password','is_active',
             'Updated', 'Created',
         ]
         read_only_fields = [
             'id', 'UserName', 'Email', 'FirstName', 'SecondName', 'Surname', 'DOB', 'NationalId','is_active',
             'Updated', 'Created',
         ]
+
 
 class AdministratorCitizenModelSerializer(GranteeCitizenModelSerializer):
     pass
@@ -2368,6 +2368,10 @@ class PublicServicePermissionSerializer(AbstractPermissionSerializer):
         fields : list[str] = [
             'id','Name', 'PermissionOpen', 'PublicService', 'Description' ,'StartTime', 'EndTime', 'Citizens', 'Created', 'Updated'
         ]
+
+        read_only_fields : list[str] = [
+            'id', 'Created', 'Updated'
+        ]
 class AssociationPermissionSerializer(AbstractPermissionSerializer):
     Association = SlugRelatedField(queryset=Association.objects.all(), slug_field='PublicId')
 
@@ -2380,6 +2384,9 @@ class AssociationPermissionSerializer(AbstractPermissionSerializer):
         model : AssociationPermission = AssociationPermission
         fields : list[str] = [
             'id','Name', 'PermissionOpen', 'Association', 'Description' ,'StartTime', 'EndTime', 'Citizens', 'Created', 'Updated'
+        ]
+        read_only_fields : list[str] = [
+            'id', 'Created', 'Updated'
         ]
 
 class DepartmentPermissionSerializer(AbstractPermissionSerializer):
@@ -2395,6 +2402,10 @@ class DepartmentPermissionSerializer(AbstractPermissionSerializer):
         fields : list[str] = [
             'id','Name', 'PermissionOpen', 'Department', 'Description' ,'StartTime', 'EndTime', 'Citizens', 'Created', 'Updated'
         ]
+        read_only_fields : list[str] = [
+            'id', 'Created', 'Updated'
+        ]
+
 
 from django.shortcuts import render
 from rest_framework.exceptions import MethodNotAllowed, ValidationError

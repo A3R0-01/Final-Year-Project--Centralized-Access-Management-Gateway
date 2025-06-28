@@ -15,11 +15,14 @@ class AbstractPermissionSerializer(AbstractModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['Citizens'] = PermissionCitizenSerializer(instance.Citizens).data
+        data['Citizens'] = [ PermissionCitizenSerializer(citizen).data for citizen in instance.Citizens.all()]
         return data
 
     class Meta:
         model : AbstractPermission = AbstractPermission
+        fields = [
+            'id',"Name","Description", 'Citizens',"StartTime","EndTime", 'Created', 'Updated'
+        ]
 
 
 class AbstractLogSerializer(AbstractModelSerializer):

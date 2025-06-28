@@ -27,6 +27,7 @@ type Service interface {
 }
 
 type BasicService struct {
+	EndPoints          types.MapEndPoint
 	Endpoint           *types.Endpoint
 	ServiceName        string
 	ServiceMachineName string
@@ -53,7 +54,6 @@ func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator
 		return auth, fmt.Errorf("service not found")
 	}
 	proxy := *srvc.Proxy
-	previousModifyResponse := proxy.ModifyResponse
 	newProxy := &proxy
 	proxy.ModifyResponse = func(resp *http.Response) error {
 		contentType := resp.Header.Get("Content-Type")
@@ -66,21 +66,34 @@ func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator
 			return err
 		}
 		_ = resp.Body.Close()
-
 		// Remove encoding so we can safely modify
 		resp.Header.Del("Content-Encoding")
-		targetURL := srvc.Endpoint.URL.Scheme + "://" + srvc.Endpoint.URL.Host
-		if uri := srvc.Endpoint.URL.RequestURI(); uri != "/" {
-			targetURL += uri
-		}
+
 		var modified []byte
+		modified = decompressed
+		fmt.Println(auth.SystemLog.GetSpecialUser() + "\n\n")
 		if strings.Contains(contentType, "text/html") {
-			modified = injectBaseTag(decompressed, srvc.Endpoint.MachineName, targetURL)
+
+			targetURL := srvc.Endpoint.URL.Scheme + "://" + srvc.Endpoint.URL.Host
+			if uri := srvc.Endpoint.URL.RequestURI(); uri != "/" {
+				targetURL += uri
+			}
+			modified = injectBaseTag(modified, srvc.Endpoint.MachineName, targetURL)
 		} else if strings.Contains(contentType, "text/css") {
-			modified = rewriteCSSUrlsToGateway(decompressed, srvc.Endpoint.MachineName, targetURL)
+			targetURL := srvc.Endpoint.URL.Scheme + "://" + srvc.Endpoint.URL.Host
+			if uri := srvc.Endpoint.URL.RequestURI(); uri != "/" {
+				targetURL += uri
+			}
+			modified = rewriteCSSUrlsToGateway(modified, srvc.Endpoint.MachineName, targetURL)
 		} else if (strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/json")) && strings.ToLower(auth.SystemLog.GetSpecialUser()) == "citizen" {
 			// Add JSON URL rewriting here
-			modified = rewriteJSONUrls(decompressed, srvc.Endpoint.MachineName, targetURL)
+			for _, serviceEndPoint := range srvc.EndPoints {
+				targetURL := serviceEndPoint.URL.Scheme + "://" + serviceEndPoint.URL.Host
+				if uri := serviceEndPoint.URL.RequestURI(); uri != "/" {
+					targetURL += uri
+				}
+				modified = rewriteJSONUrls(modified, serviceEndPoint.MachineName, targetURL)
+			}
 		} else {
 			modified = decompressed
 		}
@@ -98,12 +111,14 @@ func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator
 		}
 
 		// Set updated body and headers
+		fmt.Println("the content length: \n", finalBody.Len(), "     "+strconv.Itoa(finalBody.Len()))
 		resp.Body = io.NopCloser(&finalBody)
 		resp.ContentLength = int64(finalBody.Len())
 		resp.Header.Set("Content-Length", strconv.Itoa(finalBody.Len()))
 
 		return nil
 	}
+	previousModifyResponse := proxy.ModifyResponse
 	newProxy.ModifyResponse = func(response *http.Response) error {
 		if previousModifyResponse != nil {
 			if err := previousModifyResponse(response); err != nil {
@@ -168,6 +183,7 @@ func New(logger log.Logger, server *system.Server, globalMetricsHolder *types.Gl
 	for _, endP := range server.EndPoints {
 		{
 			basicService := NewBasicService(endP)
+			basicService.EndPoints = server.EndPoints
 			service := NewLoggingMiddleware(logger, &server.Credentials)(basicService)
 			service = NewInstrumentingMiddleware(globalMetricsHolder)(service)
 			services = append(services, service)

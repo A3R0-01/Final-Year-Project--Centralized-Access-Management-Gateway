@@ -21,6 +21,10 @@ class PublicServicePermissionSerializer(AbstractPermissionSerializer):
         fields : list[str] = [
             'id','Name', 'PermissionOpen', 'PublicService', 'Description' ,'StartTime', 'EndTime', 'Citizens', 'Created', 'Updated'
         ]
+
+        read_only_fields : list[str] = [
+            'id', 'Created', 'Updated'
+        ]
 class AssociationPermissionSerializer(AbstractPermissionSerializer):
     Association = SlugRelatedField(queryset=Association.objects.all(), slug_field='PublicId')
 
@@ -33,6 +37,9 @@ class AssociationPermissionSerializer(AbstractPermissionSerializer):
         model : AssociationPermission = AssociationPermission
         fields : list[str] = [
             'id','Name', 'PermissionOpen', 'Association', 'Description' ,'StartTime', 'EndTime', 'Citizens', 'Created', 'Updated'
+        ]
+        read_only_fields : list[str] = [
+            'id', 'Created', 'Updated'
         ]
 
 class DepartmentPermissionSerializer(AbstractPermissionSerializer):
@@ -47,4 +54,7 @@ class DepartmentPermissionSerializer(AbstractPermissionSerializer):
         model : DepartmentPermission = DepartmentPermission
         fields : list[str] = [
             'id','Name', 'PermissionOpen', 'Department', 'Description' ,'StartTime', 'EndTime', 'Citizens', 'Created', 'Updated'
+        ]
+        read_only_fields : list[str] = [
+            'id', 'Created', 'Updated'
         ]

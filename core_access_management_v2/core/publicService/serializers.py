@@ -82,7 +82,7 @@ class AdministratorPublicServiceSerializer(GranteePublicServiceSerializer):
     class Meta:
         model : PublicService = PublicService
         fields : list[str] = [
-            'id','Title', "MachineName", 'Email', 'Association', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
+            'id','Title', "MachineName", 'Email', 'Association','Restricted', 'Visibility', 'Description', 'URL', 'Grantee', 'Created', 'Updated'
         ]
         read_only_fields : list[str] = [
             'id', 'Created', 'Updated'
