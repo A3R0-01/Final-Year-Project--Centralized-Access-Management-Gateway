@@ -14,6 +14,7 @@ from pathlib import Path
 from celery.schedules import crontab
 import json
 from datetime import time
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -107,10 +108,11 @@ WSGI_APPLICATION = 'core_access_management_v2.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django_prometheus.db.backends.postgresql',
-        'NAME': 'core_access_management_v2',
-        'PASSWORD': 'bsrvnt',
-        'USER': 'postgres',
-        'HOST': 'localhost',
+        'NAME': os.environ.get('POSTGRES_DB', 'core_access_management_v2'),
+        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'bsrvnt'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 

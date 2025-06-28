@@ -1,78 +1,98 @@
-version: '3'
+version: '3.3'
+
 services:
   # central_gateway:
-  #   build: /central-gateway/
+  #   build: ./central-gateway/
   #   container_name: central_gateway-container
   #   ports:
   #     - 8020:8020
   #   depends_on:
   #     - core_access
-  frontend:
+
+  nextjs:
     build:
       context: ./frontend
-    container_name: nextjs_frontend
+      dockerfile: Dockerfile
+    container_name: nextjs-dev
     ports:
-      - "3000:3000"
+      - "3001:3000"
     volumes:
       - ./frontend:/app
-    command: npm run dev
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_GATEWAY_URL=http://localhost:8020
+
   prometheus:
     image: prom/prometheus
-    container_name: prometheus
+    container_name: prometheus-prod
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     ports:
-      - 9090:9090
+      - "9090:9090"
     restart: unless-stopped
     volumes:
       - ./prometheus:/etc/prometheus
       - prom_data:/prometheus
+
   grafana:
     image: grafana/grafana
-    container_name: grafana
+    container_name: grafana-prod
     ports:
-      - 3000:3000
+      - "3000:3000"
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=bsrvnt
     volumes:
       - ./grafana:/etc/grafana/provisioning/datasources
-      - grafana-storage:/var/lib/grafana
-  # core_access:
-  #   build: /core_access_management_v2/
-  #   volumes:
-  #     - core_access_management_v2:/core_access_management_v2
-  #   ports:
-  #     - 8000:8000
-  #   image: core_access:core_access-image
-  #   container_name: core_access-django-container
-  #   command: >
-  #     sh -c "python manage.py migrate &&
-  #            python manage.py collectstatic --noinput &&
-  #            python manage.py runserver 0.0.0.0:8000"
-  #   depends_on:
-  #     - core_access_db
-  # core_access_db:
-  #   image: postgres
-  #   volumes:
-  #     - postgres_database/db:/var/lib/postgresql/data
-  #   environment:
-  #     - POSTGRES_DB=core_access_management_v2
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=bsrvnt
-  #   container_name: core_access-db-container
+      - grafana_storage:/var/lib/grafana
+
+  core_access:
+    build: ./core_access_management_v2/
+    container_name: core_access-django-container
+    ports:
+      - "8000:8000"
+    volumes:
+      # Use bind mount for development (optional)
+      - ./core_access_management_v2:/core_access_management_v2
+    environment:
+      - DJANGO_SETTINGS_MODULE=core_access_management_v2.settings
+      - DB_HOST=core_access_db
+      - DB_PORT=5432
+      - POSTGRES_DB=core_access_management_v2
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=bsrvnt
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py loaddata data.json &&
+             python manage.py runserver"
+    depends_on:
+      - core_access_db
+
+  core_access_db:
+    image: postgres:15
+    container_name: core_access-db-container
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=core_access_management_v2
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=bsrvnt
+    ports:
+      - "5432:5432"  # Optional: for external access
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
-    container_name: zookeeper
+    container_name: zookeeper-prod
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
   broker:
     image: confluentinc/cp-kafka:7.3.2
-    container_name: broker
+    container_name: broker-prod
     ports:
       - "9092:9092"
     depends_on:
@@ -81,11 +101,12 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092, PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
 volumes:
-  grafana-storage: {}
+  grafana_storage:
   prom_data:
+  postgres_data:
