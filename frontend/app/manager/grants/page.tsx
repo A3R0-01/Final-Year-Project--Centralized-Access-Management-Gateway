@@ -51,7 +51,7 @@ export default function ManagerGrantsPage() {
           grant.Request?.Subject?.toLowerCase().includes(query) ||
           grant.Request?.PublicService?.Title?.toLowerCase().includes(query) ||
           grant.Request?.Citizen?.UserName?.toLowerCase().includes(query) ||
-          grant.Request?.Citizen?.Email?.toLowerCase().includes(query),
+          grant.Grantee?.GranteeUserName?.toLowerCase().includes(query),
       )
     }
 
@@ -189,9 +189,9 @@ export default function ManagerGrantsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Request</TableHead>
+                          <TableHead>Request Subject</TableHead>
                           <TableHead>Citizen</TableHead>
-                          <TableHead>Service</TableHead>
+                          <TableHead>Grantee</TableHead>
                           <TableHead>Start Date</TableHead>
                           <TableHead>End Date</TableHead>
                           <TableHead>Status</TableHead>
@@ -202,8 +202,8 @@ export default function ManagerGrantsPage() {
                         {filteredGrants.map((grant) => (
                           <TableRow key={grant.id}>
                             <TableCell className="font-medium">{grant.Request?.Subject || "Unknown"}</TableCell>
-                            <TableCell>{grant.Request?.Citizen?.UserName || "Unknown"}</TableCell>
-                            <TableCell>{grant.Request?.PublicService?.Title || "Unknown"}</TableCell>
+                            <TableCell>{grant.Request?.Citizen || "Unknown"}</TableCell>
+                            <TableCell>{grant.Grantee?.GranteeUserName || "Not Assigned"}</TableCell>
                             <TableCell>
                               {grant.StartDate ? new Date(grant.StartDate).toLocaleDateString() : "N/A"}
                             </TableCell>

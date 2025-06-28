@@ -226,8 +226,28 @@ export default function AdminRequestsPage() {
                         {filteredRequests.map((request) => (
                           <TableRow key={request.id}>
                             <TableCell className="font-medium">{request.Subject}</TableCell>
-                            <TableCell>{request.Citizen?.UserName || "Unknown"}</TableCell>
-                            <TableCell>{request.PublicService?.Title || "Unknown"}</TableCell>
+                            <TableCell>
+                              {request.Citizen ? (
+                                <div>
+                                  <div className="font-medium">{request.Citizen.UserName}</div>
+                                  <div className="text-sm text-muted-foreground">{request.Citizen.Email}</div>
+                                </div>
+                              ) : (
+                                "Unknown"
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {request.PublicService ? (
+                                <div>
+                                  <div className="font-medium">{request.PublicService.Title}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {request.PublicService.MachineName}
+                                  </div>
+                                </div>
+                              ) : (
+                                "Unknown"
+                              )}
+                            </TableCell>
                             <TableCell>{new Date(request.Created).toLocaleDateString()}</TableCell>
                             <TableCell>{getStatusBadge(request)}</TableCell>
                             <TableCell className="text-right">
@@ -241,7 +261,7 @@ export default function AdminRequestsPage() {
                                       variant="outline"
                                       size="sm"
                                       disabled={deletingId === request.id}
-                                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950 bg-transparent"
                                     >
                                       {deletingId === request.id ? (
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />

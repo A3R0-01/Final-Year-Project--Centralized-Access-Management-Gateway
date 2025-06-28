@@ -6,19 +6,7 @@ import DashboardLayout from "@/components/layouts/dashboard-layout"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
-import {
-  ArrowLeft,
-  Clock,
-  CheckCircle,
-  XCircle,
-  User,
-  Mail,
-  BadgeIcon as IdCard,
-  Building,
-  Briefcase,
-  Calendar,
-  Edit,
-} from "lucide-react"
+import { ArrowLeft, Clock, CheckCircle, XCircle, Calendar, Edit } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -67,14 +55,14 @@ export default function GrantDetailPage() {
   const getStatusBadge = () => {
     if (!grant) return null
 
-    if (grant.Status === "Rejected" || grant.Decline) {
+    if (grant.Decline) {
       return (
         <Badge variant="destructive" className="flex items-center gap-1.5">
           <XCircle className="h-3.5 w-3.5" />
-          <span>Rejected</span>
+          <span>Declined</span>
         </Badge>
       )
-    } else if (grant.Status === "Approved" || grant.Granted) {
+    } else if (grant.Granted) {
       if (grant.EndDate && new Date(grant.EndDate) < new Date()) {
         return (
           <Badge variant="outline" className="flex items-center gap-1.5">
@@ -99,7 +87,7 @@ export default function GrantDetailPage() {
           className="flex items-center gap-1.5 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
         >
           <Clock className="h-3.5 w-3.5" />
-          <span>{grant.Status || "Pending"}</span>
+          <span>Pending</span>
         </Badge>
       )
     }
@@ -161,37 +149,15 @@ export default function GrantDetailPage() {
                 <Tabs defaultValue="details" onValueChange={setActiveTab}>
                   <TabsList>
                     <TabsTrigger value="details">Grant Details</TabsTrigger>
-                    <TabsTrigger value="citizen">Citizen Info</TabsTrigger>
-                    <TabsTrigger value="service">Service Info</TabsTrigger>
                     <TabsTrigger value="request">Request Info</TabsTrigger>
+                    <TabsTrigger value="grantee">Grantee Info</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="details" className="mt-4 space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Status</h3>
-                      <p>
-                        {grant.Status ||
-                          (grant.Decline
-                            ? "Declined"
-                            : grant.Granted && grant.EndDate && new Date(grant.EndDate) < new Date()
-                              ? "Expired"
-                              : grant.Granted
-                                ? "Active"
-                                : "Pending")}
-                      </p>
-                    </div>
-
-                    <div>
                       <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Message</h3>
-                      <p className="whitespace-pre-line">{grant.Message || grant.Notes || "No message provided"}</p>
+                      <p className="whitespace-pre-line">{grant.Message || "No message provided"}</p>
                     </div>
-
-                    {grant.Amount && (
-                      <div>
-                        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Amount</h3>
-                        <p>${Number.parseFloat(grant.Amount).toFixed(2)}</p>
-                      </div>
-                    )}
 
                     <div>
                       <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Validity Period</h3>
@@ -203,102 +169,29 @@ export default function GrantDetailPage() {
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Created</h3>
-                      <p>{new Date(grant.Created || grant.CreatedAt).toLocaleString()}</p>
-                    </div>
-
-                    {grant.UpdatedAt && (
-                      <div>
-                        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Last Updated</h3>
-                        <p>{new Date(grant.UpdatedAt).toLocaleString()}</p>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="citizen" className="mt-4 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-slate-500" />
-                      <div>
-                        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Name</h3>
-                        <p>{`${grant.Citizen?.FirstName || grant.Request?.Citizen?.FirstName || ""} ${grant.Citizen?.SecondName || grant.Request?.Citizen?.SecondName || ""} ${grant.Citizen?.Surname || grant.Request?.Citizen?.Surname || ""}`}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-5 w-5 text-slate-500" />
-                      <div>
-                        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Email</h3>
-                        <p>{grant.Citizen?.Email || grant.Request?.Citizen?.Email || "N/A"}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <IdCard className="h-5 w-5 text-slate-500" />
-                      <div>
-                        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">National ID</h3>
-                        <p>{grant.Citizen?.NationalId || grant.Request?.Citizen?.NationalId || "N/A"}</p>
-                      </div>
-                    </div>
-
-                    <Button asChild variant="outline">
-                      <Link href={`/manager/users/citizen/${grant.Citizen?.id || grant.Request?.Citizen?.id}`}>
-                        View Full Profile
-                      </Link>
-                    </Button>
-                  </TabsContent>
-
-                  <TabsContent value="service" className="mt-4 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="h-5 w-5 text-slate-500" />
-                      <div>
-                        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Service</h3>
-                        <p>
-                          <Link
-                            href={`/manager/services/${grant.PublicService?.id || grant.Request?.PublicService?.id}`}
-                            className="hover:underline text-blue-600"
-                          >
-                            {grant.PublicService?.Title || grant.Request?.PublicService?.Title || "N/A"}
-                          </Link>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Building className="h-5 w-5 text-slate-500" />
-                      <div>
-                        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Department</h3>
-                        <p>
-                          <Link
-                            href={`/manager/departments/${grant.PublicService?.Association?.Department?.id || grant.Request?.PublicService?.Association?.Department?.id}`}
-                            className="hover:underline text-blue-600"
-                          >
-                            {grant.PublicService?.Association?.Department?.Title ||
-                              grant.Request?.PublicService?.Association?.Department?.Title ||
-                              "N/A"}
-                          </Link>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Association</h3>
+                      <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Status</h3>
                       <p>
-                        <Link
-                          href={`/manager/associations/${grant.PublicService?.Association?.id || grant.Request?.PublicService?.Association?.id}`}
-                          className="hover:underline text-blue-600"
-                        >
-                          {grant.PublicService?.Association?.Title ||
-                            grant.Request?.PublicService?.Association?.Title ||
-                            "N/A"}
-                        </Link>
+                        {grant.Decline
+                          ? "Declined"
+                          : grant.Granted && grant.EndDate && new Date(grant.EndDate) < new Date()
+                            ? "Expired"
+                            : grant.Granted
+                              ? "Active"
+                              : "Pending"}
                       </p>
                     </div>
 
-                    <Button asChild variant="outline">
-                      <Link href={`/manager/services/${grant.PublicService?.id || grant.Request?.PublicService?.id}`}>
-                        View Service Details
-                      </Link>
-                    </Button>
+                    <div>
+                      <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Created</h3>
+                      <p>{new Date(grant.Created).toLocaleString()}</p>
+                    </div>
+
+                    {grant.Updated && (
+                      <div>
+                        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Last Updated</h3>
+                        <p>{new Date(grant.Updated).toLocaleString()}</p>
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="request" className="mt-4 space-y-4">
@@ -306,25 +199,42 @@ export default function GrantDetailPage() {
                       <>
                         <div>
                           <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Subject</h3>
-                          <p>{grant.Request?.Subject || "N/A"}</p>
+                          <p>{grant.Request.Subject || "N/A"}</p>
                         </div>
 
                         <div>
-                          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Message</h3>
-                          <p className="whitespace-pre-line">{grant.Request?.Message || "No message provided"}</p>
+                          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Citizen</h3>
+                          <p>{grant.Request.Citizen || "N/A"}</p>
                         </div>
 
                         <div>
-                          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Submitted On</h3>
-                          <p>{grant.Request?.Created ? new Date(grant.Request.Created).toLocaleString() : "N/A"}</p>
+                          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Service</h3>
+                          <p>{grant.Request.PublicService || "N/A"}</p>
                         </div>
 
                         <Button asChild variant="outline">
-                          <Link href={`/manager/requests/${grant.Request?.id}`}>View Request Details</Link>
+                          <Link href={`/manager/requests/${grant.Request.id}`}>View Request Details</Link>
                         </Button>
                       </>
                     ) : (
                       <p>No request information available for this grant.</p>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="grantee" className="mt-4 space-y-4">
+                    {grant.Grantee ? (
+                      <>
+                        <div>
+                          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Username</h3>
+                          <p>{grant.Grantee.GranteeUserName || "N/A"}</p>
+                        </div>
+
+                        <Button asChild variant="outline">
+                          <Link href={`/manager/grantees/${grant.Grantee.id}`}>View Grantee Details</Link>
+                        </Button>
+                      </>
+                    ) : (
+                      <p>No grantee assigned to this grant.</p>
                     )}
                   </TabsContent>
                 </Tabs>

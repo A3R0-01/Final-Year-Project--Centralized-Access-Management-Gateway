@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
 
 export default function ManagerServicesPage() {
   const { toast } = useToast()
@@ -78,7 +79,7 @@ export default function ManagerServicesPage() {
           service.Title?.toLowerCase().includes(query) ||
           service.Description?.toLowerCase().includes(query) ||
           service.Association?.Title?.toLowerCase().includes(query) ||
-          service.Association?.Department?.Title?.toLowerCase().includes(query),
+          service.Association?.Department?.toLowerCase().includes(query),
       )
       setFilteredServices(filtered)
     }
@@ -414,9 +415,10 @@ export default function ManagerServicesPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Service Name</TableHead>
+                      <TableHead>Machine Name</TableHead>
                       <TableHead>Association</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Requests</TableHead>
+                      <TableHead>Grantees</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -424,9 +426,44 @@ export default function ManagerServicesPage() {
                     {filteredServices.map((service) => (
                       <TableRow key={service.id}>
                         <TableCell className="font-medium">{service.Title}</TableCell>
+                        <TableCell className="font-mono text-sm">{service.MachineName}</TableCell>
                         <TableCell>{service.Association?.Title || "N/A"}</TableCell>
-                        <TableCell>{service.Association?.Department?.Title || "N/A"}</TableCell>
-                        <TableCell>{service.requests?.length || 0}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {service.Grantee && service.Grantee.length > 0 ? (
+                              service.Grantee.slice(0, 2).map((grantee: any) => (
+                                <Badge key={grantee.id} variant="secondary" className="text-xs">
+                                  {grantee.GranteeUserName}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No grantees</span>
+                            )}
+                            {service.Grantee && service.Grantee.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{service.Grantee.length - 2} more
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            {service.Restricted && (
+                              <Badge variant="destructive" className="text-xs">
+                                Restricted
+                              </Badge>
+                            )}
+                            {service.Visibility ? (
+                              <Badge variant="default" className="text-xs">
+                                Public
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">
+                                Hidden
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button asChild variant="outline" size="sm">
@@ -442,7 +479,7 @@ export default function ManagerServicesPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
                                   disabled={deletingServiceId === service.id}
                                 >
                                   {deletingServiceId === service.id ? (

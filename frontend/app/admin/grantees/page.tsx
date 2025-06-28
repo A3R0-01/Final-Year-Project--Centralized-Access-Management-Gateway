@@ -38,7 +38,6 @@ export default function AdminGranteesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [associations, setAssociations] = useState<any[]>([])
-  // Removed Administrator from formData
   const [formData, setFormData] = useState({
     GranteeUserName: "",
     FirstEmail: "",
@@ -49,7 +48,6 @@ export default function AdminGranteesPage() {
     Active: true,
   })
 
-  // Removed administrators state
   const [citizens, setCitizens] = useState<any[]>([])
   const [deletingGranteeId, setDeletingGranteeId] = useState<string | null>(null)
 
@@ -76,7 +74,6 @@ export default function AdminGranteesPage() {
   useEffect(() => {
     fetchGrantees()
     fetchAssociations()
-    // Removed fetchAdministrators call
     fetchCitizens()
   }, [])
 
@@ -91,8 +88,6 @@ export default function AdminGranteesPage() {
       console.error("Error fetching associations:", error)
     }
   }
-
-  // Removed fetchAdministrators function
 
   const fetchCitizens = async () => {
     try {
@@ -124,8 +119,6 @@ export default function AdminGranteesPage() {
     setIsSubmitting(true)
 
     try {
-      // Format the data according to what the API expects
-      // Removed Administrator from granteeData
       const granteeData = {
         GranteeUserName: formData.GranteeUserName,
         FirstEmail: formData.FirstEmail,
@@ -171,7 +164,6 @@ export default function AdminGranteesPage() {
       })
 
       // Reset form and refresh grantees
-      // Removed Administrator from reset form
       setFormData({
         GranteeUserName: "",
         FirstEmail: "",
@@ -345,7 +337,6 @@ export default function AdminGranteesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Removed Administrator field */}
                 <div className="space-y-2">
                   <Label htmlFor="Citizen">Citizen</Label>
                   <Select
@@ -359,7 +350,7 @@ export default function AdminGranteesPage() {
                     <SelectContent>
                       {citizens.map((citizen) => (
                         <SelectItem key={citizen.id} value={citizen.id}>
-                          {citizen.UserName}
+                          {citizen.UserName} ({citizen.NationalId})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -405,7 +396,7 @@ export default function AdminGranteesPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Username</TableHead>
-                      <TableHead>Name</TableHead>
+                      <TableHead>Citizen</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Association</TableHead>
                       <TableHead>Created</TableHead>
@@ -417,10 +408,28 @@ export default function AdminGranteesPage() {
                       <TableRow key={grantee.id}>
                         <TableCell className="font-medium">{grantee.GranteeUserName}</TableCell>
                         <TableCell>
-                          {grantee.FirstName} {grantee.LastName}
+                          {grantee.Citizen ? (
+                            <div>
+                              <div className="font-medium">{grantee.Citizen.UserName}</div>
+                              <div className="text-sm text-muted-foreground">{grantee.Citizen.NationalId}</div>
+                            </div>
+                          ) : (
+                            "Not Assigned"
+                          )}
                         </TableCell>
                         <TableCell>{grantee.FirstEmail}</TableCell>
-                        <TableCell>{grantee.Association?.Title || "Not Assigned"}</TableCell>
+                        <TableCell>
+                          {grantee.Association ? (
+                            <div>
+                              <div className="font-medium">{grantee.Association.Title}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {grantee.Association.Department || "No Department"}
+                              </div>
+                            </div>
+                          ) : (
+                            "Not Assigned"
+                          )}
+                        </TableCell>
                         <TableCell>{new Date(grantee.Created).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
@@ -435,7 +444,7 @@ export default function AdminGranteesPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
                                   disabled={deletingGranteeId === grantee.id}
                                 >
                                   {deletingGranteeId === grantee.id ? (

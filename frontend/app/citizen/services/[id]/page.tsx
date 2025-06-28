@@ -69,40 +69,50 @@ export default function ServiceDetailPage() {
   }, [serviceId, user])
 
   const handleAccessService = async () => {
-    if (!service?.URL) return
+    if (!service?.MachineName) return
 
     setIsAccessingService(true)
     try {
-      const accessToken = localStorage.getItem("accessToken")
+      const gatewayUrl = process.env.NEXT_PUBLIC_GATEWAY_URL || ""
+      const serviceUrl = `${gatewayUrl}/${service.MachineName}/`
 
-      // First, make a HEAD request to check if the service is accessible
-      const response = await fetch(service.URL, {
+      // Check if the service is accessible by making a HEAD request
+      const accessToken = localStorage.getItem("accessToken")
+      const response = await fetch(serviceUrl, {
         method: "HEAD",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       })
 
-      if (response.ok) {
-        // If the service responds successfully, open it in a new tab
-        // We'll pass the token as a query parameter since we can't set headers in a new tab
-        const serviceUrl = new URL(service.URL)
-        serviceUrl.searchParams.set("access_token", accessToken || "")
-
-        window.open(serviceUrl.toString(), "_blank", "noopener,noreferrer")
-
+      if (response.status === 401) {
         toast({
-          title: "Service accessed",
-          description: "The service has been opened in a new tab.",
+          title: "Access denied",
+          description: "You don't have permission to access this service. Please request access first.",
+          variant: "destructive",
         })
-      } else {
-        throw new Error(`Service returned ${response.status}: ${response.statusText}`)
+        return
+      } else if (!response.ok) {
+        toast({
+          title: "Service unavailable",
+          description: "The service is currently unavailable. Please try again later.",
+          variant: "destructive",
+        })
+        return
       }
+
+      // If successful, open the service in a new tab
+      window.open(serviceUrl, "_blank", "noopener,noreferrer")
+
+      toast({
+        title: "Service accessed",
+        description: "The service has been opened in a new tab.",
+      })
     } catch (error: any) {
       console.error("Error accessing service:", error)
       toast({
-        title: "Service access failed",
-        description: error.message || "Failed to access the service. Please try again.",
+        title: "Service unavailable",
+        description: "The service is currently unavailable. Please try again later.",
         variant: "destructive",
       })
     } finally {
@@ -193,26 +203,19 @@ export default function ServiceDetailPage() {
                           </Link>
                         </Button>
                       ) : (
-                        service.URL && (
-                          <Button
-                            onClick={handleAccessService}
-                            disabled={isAccessingService}
-                            size="sm"
-                            className="w-fit"
-                          >
-                            {isAccessingService ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Accessing...
-                              </>
-                            ) : (
-                              <>
-                                <ExternalLink className="h-4 w-4 mr-1" />
-                                Access Service
-                              </>
-                            )}
-                          </Button>
-                        )
+                        <Button onClick={handleAccessService} disabled={isAccessingService} size="sm" className="w-fit">
+                          {isAccessingService ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Accessing...
+                            </>
+                          ) : (
+                            <>
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              Access Service
+                            </>
+                          )}
+                        </Button>
                       )}
                     </div>
                   </div>

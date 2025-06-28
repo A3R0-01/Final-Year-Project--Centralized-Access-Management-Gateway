@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
 import { directApi } from "@/lib/api-direct"
-import { Briefcase, Search, Plus, Edit, Trash2 } from "lucide-react"
+import { Briefcase, Search, Plus, Edit, Trash2, Lock, Unlock, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
 
 export default function AdminServicesPage() {
   const { toast } = useToast()
@@ -76,9 +77,10 @@ export default function AdminServicesPage() {
       const filtered = services.filter(
         (service) =>
           service.Title?.toLowerCase().includes(query) ||
+          service.MachineName?.toLowerCase().includes(query) ||
           service.Description?.toLowerCase().includes(query) ||
           service.Association?.Title?.toLowerCase().includes(query) ||
-          service.Association?.Department?.Title?.toLowerCase().includes(query),
+          service.Association?.Department?.toLowerCase().includes(query),
       )
       setFilteredServices(filtered)
     }
@@ -300,7 +302,7 @@ export default function AdminServicesPage() {
                         <SelectContent>
                           {associations.map((association) => (
                             <SelectItem key={association.id} value={association.id}>
-                              {association.Title}
+                              {association.Title} ({association.Department?.Title || "No Department"})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -414,8 +416,10 @@ export default function AdminServicesPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Service Name</TableHead>
+                      <TableHead>Machine Name</TableHead>
                       <TableHead>Association</TableHead>
-                      <TableHead>Requests</TableHead>
+                      <TableHead>Grantees</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -424,8 +428,62 @@ export default function AdminServicesPage() {
                     {filteredServices.map((service) => (
                       <TableRow key={service.id}>
                         <TableCell className="font-medium">{service.Title}</TableCell>
+                        <TableCell>
+                          <code className="text-xs bg-muted px-1 py-0.5 rounded">{service.MachineName}</code>
+                        </TableCell>
                         <TableCell>{service.Association?.Title || "N/A"}</TableCell>
-                        <TableCell>{service.requests?.length || 0}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {service.Grantee && service.Grantee.length > 0 ? (
+                              service.Grantee.slice(0, 2).map((grantee: any) => (
+                                <Badge key={grantee.id} variant="outline" className="text-xs">
+                                  {grantee.GranteeUserName}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground">None</span>
+                            )}
+                            {service.Grantee && service.Grantee.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{service.Grantee.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${
+                                service.Restricted
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                  : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                              }`}
+                            >
+                              {service.Restricted ? (
+                                <Lock className="h-3 w-3 mr-1" />
+                              ) : (
+                                <Unlock className="h-3 w-3 mr-1" />
+                              )}
+                              {service.Restricted ? "Restricted" : "Open"}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${
+                                service.Visibility
+                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                  : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                              }`}
+                            >
+                              {service.Visibility ? (
+                                <Eye className="h-3 w-3 mr-1" />
+                              ) : (
+                                <EyeOff className="h-3 w-3 mr-1" />
+                              )}
+                              {service.Visibility ? "Public" : "Private"}
+                            </Badge>
+                          </div>
+                        </TableCell>
                         <TableCell>{new Date(service.Created).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">

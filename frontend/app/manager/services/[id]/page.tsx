@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/layouts/dashboard-layout"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
-import { ArrowLeft, Briefcase, FileText, ExternalLink, Mail, Edit, Building, Shield } from "lucide-react"
+import { ArrowLeft, Briefcase, FileText, ExternalLink, Mail, Edit, Building, Shield, User } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -97,11 +97,29 @@ export default function ServiceDetailPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <CardTitle className="text-2xl">{service.Title}</CardTitle>
-                    <CardDescription>Service ID: {service.id}</CardDescription>
+                    <CardDescription>
+                      Service ID: {service.id} • Machine Name: {service.MachineName}
+                    </CardDescription>
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                    <Briefcase className="h-5 w-5" />
-                    <span>Service</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                      <Briefcase className="h-4 w-4" />
+                      <span>Service</span>
+                    </div>
+                    {service.Restricted && (
+                      <Badge variant="destructive" className="text-xs">
+                        Restricted
+                      </Badge>
+                    )}
+                    {service.Visibility ? (
+                      <Badge variant="default" className="text-xs">
+                        Public
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        Hidden
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -109,8 +127,8 @@ export default function ServiceDetailPage() {
                 <Tabs defaultValue="details" onValueChange={setActiveTab}>
                   <TabsList>
                     <TabsTrigger value="details">Service Details</TabsTrigger>
+                    <TabsTrigger value="grantees">Grantees</TabsTrigger>
                     <TabsTrigger value="requests">Requests</TabsTrigger>
-                    <TabsTrigger value="grants">Grants</TabsTrigger>
                     <TabsTrigger value="permissions">Permissions</TabsTrigger>
                   </TabsList>
 
@@ -139,7 +157,7 @@ export default function ServiceDetailPage() {
                           className="flex items-center gap-1 text-blue-600 hover:underline"
                         >
                           <Building className="h-4 w-4" />
-                          {service.Association?.Department?.Title || "N/A"}
+                          {service.Association?.Department || "N/A"}
                         </Link>
                       </div>
                     </div>
@@ -179,49 +197,28 @@ export default function ServiceDetailPage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="requests" className="mt-4">
-                    {service.requests && service.requests.length > 0 ? (
+                  <TabsContent value="grantees" className="mt-4">
+                    {service.Grantee && service.Grantee.length > 0 ? (
                       <div className="rounded-md border">
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Subject</TableHead>
-                              <TableHead>Citizen</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
+                              <TableHead>Username</TableHead>
+                              <TableHead>Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {service.requests.map((request: any) => (
-                              <TableRow key={request.id}>
-                                <TableCell className="font-medium">{request.Subject}</TableCell>
-                                <TableCell>
-                                  <Link
-                                    href={`/manager/users/citizen/${request.Citizen?.id}`}
-                                    className="text-blue-600 hover:underline"
-                                  >
-                                    {request.Citizen?.UserName || "Unknown"}
-                                  </Link>
+                            {service.Grantee.map((grantee: any) => (
+                              <TableRow key={grantee.id}>
+                                <TableCell className="font-medium">
+                                  <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-slate-500" />
+                                    {grantee.GranteeUserName}
+                                  </div>
                                 </TableCell>
-                                <TableCell>{new Date(request.Created).toLocaleDateString()}</TableCell>
                                 <TableCell>
-                                  <Badge
-                                    variant="outline"
-                                    className={
-                                      request.Decline
-                                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800"
-                                        : request.Granted
-                                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800"
-                                          : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800"
-                                    }
-                                  >
-                                    {request.Decline ? "Rejected" : request.Granted ? "Approved" : "Pending"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
                                   <Button asChild variant="outline" size="sm">
-                                    <Link href={`/manager/requests/${request.id}`}>View</Link>
+                                    <Link href={`/manager/grantees/${grantee.id}`}>View Details</Link>
                                   </Button>
                                 </TableCell>
                               </TableRow>
@@ -232,160 +229,38 @@ export default function ServiceDetailPage() {
                     ) : (
                       <Card>
                         <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-                          <FileText className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-4" />
-                          <h3 className="text-lg font-medium mb-2">No requests found</h3>
+                          <User className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-4" />
+                          <h3 className="text-lg font-medium mb-2">No grantees assigned</h3>
                           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
-                            This service doesn't have any requests yet.
+                            This service doesn't have any grantees assigned yet.
                           </p>
                         </CardContent>
                       </Card>
                     )}
                   </TabsContent>
 
-                  <TabsContent value="grants" className="mt-4">
-                    {service.grants && service.grants.length > 0 ? (
-                      <div className="rounded-md border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Citizen</TableHead>
-                              <TableHead>Start Date</TableHead>
-                              <TableHead>End Date</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {service.grants.map((grant: any) => (
-                              <TableRow key={grant.id}>
-                                <TableCell className="font-medium">
-                                  <Link
-                                    href={`/manager/users/citizen/${grant.Request?.Citizen?.id}`}
-                                    className="text-blue-600 hover:underline"
-                                  >
-                                    {grant.Request?.Citizen?.UserName || "Unknown"}
-                                  </Link>
-                                </TableCell>
-                                <TableCell>
-                                  {grant.StartDate ? new Date(grant.StartDate).toLocaleDateString() : "N/A"}
-                                </TableCell>
-                                <TableCell>
-                                  {grant.EndDate ? new Date(grant.EndDate).toLocaleDateString() : "N/A"}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant="outline"
-                                    className={
-                                      grant.Decline
-                                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800"
-                                        : grant.Granted && grant.EndDate && new Date(grant.EndDate) < new Date()
-                                          ? "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700"
-                                          : grant.Granted
-                                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800"
-                                            : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800"
-                                    }
-                                  >
-                                    {grant.Decline
-                                      ? "Declined"
-                                      : grant.Granted && grant.EndDate && new Date(grant.EndDate) < new Date()
-                                        ? "Expired"
-                                        : grant.Granted
-                                          ? "Active"
-                                          : "Pending"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Button asChild variant="outline" size="sm">
-                                    <Link href={`/manager/grants/${grant.id}`}>View</Link>
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ) : (
-                      <Card>
-                        <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-                          <FileText className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-4" />
-                          <h3 className="text-lg font-medium mb-2">No grants found</h3>
-                          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
-                            This service doesn't have any grants yet.
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )}
+                  <TabsContent value="requests" className="mt-4">
+                    <Card>
+                      <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                        <FileText className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-4" />
+                        <h3 className="text-lg font-medium mb-2">Requests data not available</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
+                          Request information is not included in the service details response.
+                        </p>
+                      </CardContent>
+                    </Card>
                   </TabsContent>
 
                   <TabsContent value="permissions" className="mt-4">
-                    <div className="flex justify-end mb-4">
-                      <Button asChild>
-                        <Link href={`/manager/permissions/new?type=service&serviceId=${serviceId}`}>
-                          Add Service Permission
-                        </Link>
-                      </Button>
-                    </div>
-                    {service.permissions && service.permissions.length > 0 ? (
-                      <div className="rounded-md border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Grantee</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Created</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {service.permissions.map((permission: any) => (
-                              <TableRow key={permission.id}>
-                                <TableCell className="font-medium">
-                                  <Link
-                                    href={`/manager/users/grantee/${permission.Grantee?.id}`}
-                                    className="text-blue-600 hover:underline"
-                                  >
-                                    {permission.Grantee?.GranteeUserName || "Unknown"}
-                                  </Link>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant={permission.Active ? "success" : "secondary"}
-                                    className={
-                                      permission.Active
-                                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                                        : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300"
-                                    }
-                                  >
-                                    {permission.Active ? "Active" : "Inactive"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>{new Date(permission.Created).toLocaleDateString()}</TableCell>
-                                <TableCell className="text-right">
-                                  <Button asChild variant="outline" size="sm">
-                                    <Link href={`/manager/permissions/${permission.id}`}>View</Link>
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ) : (
-                      <Card>
-                        <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-                          <Shield className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-4" />
-                          <h3 className="text-lg font-medium mb-2">No permissions found</h3>
-                          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mb-6">
-                            This service doesn't have any permissions assigned yet.
-                          </p>
-                          <Button asChild>
-                            <Link href={`/manager/permissions/new?type=service&serviceId=${serviceId}`}>
-                              Add Service Permission
-                            </Link>
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    )}
+                    <Card>
+                      <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                        <Shield className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-4" />
+                        <h3 className="text-lg font-medium mb-2">Permissions data not available</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
+                          Permission information is not included in the service details response.
+                        </p>
+                      </CardContent>
+                    </Card>
                   </TabsContent>
                 </Tabs>
               </CardContent>

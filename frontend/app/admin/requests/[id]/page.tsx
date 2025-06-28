@@ -7,18 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { directApi } from "@/lib/api-direct"
-import {
-  ArrowLeft,
-  Calendar,
-  CheckCircle,
-  Clock,
-  Download,
-  FileText,
-  MessageSquare,
-  Paperclip,
-  User,
-  XCircle,
-} from "lucide-react"
+import { ArrowLeft, Calendar, CheckCircle, Clock, Download, FileText, Paperclip, User, XCircle } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -313,35 +302,36 @@ export default function AdminRequestDetailPage() {
                       <Textarea
                         id="response"
                         placeholder="Enter your response message..."
-                        rows={4}
                         value={responseMessage}
                         onChange={(e) => setResponseMessage(e.target.value)}
+                        rows={4}
                       />
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter className="flex justify-end space-x-2">
+                <CardFooter className="flex gap-2">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="destructive" disabled={isSubmitting}>
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Reject
+                      <Button
+                        variant="outline"
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50 bg-transparent"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Approve
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Approve Request</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will reject the request and notify the citizen. This action cannot be undone.
+                          Are you sure you want to approve this request? This will grant the citizen access to the
+                          requested service.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleReject}
-                          className="bg-destructive text-destructive-foreground"
-                        >
-                          Reject
+                        <AlertDialogAction onClick={handleApprove} disabled={isSubmitting}>
+                          {isSubmitting ? "Approving..." : "Approve Request"}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -349,21 +339,30 @@ export default function AdminRequestDetailPage() {
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button disabled={isSubmitting}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Approve
+                      <Button
+                        variant="outline"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Reject
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm Approval</AlertDialogTitle>
+                        <AlertDialogTitle>Reject Request</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will approve the request and notify the citizen. Proceed?
+                          Are you sure you want to reject this request? This action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleApprove}>Approve</AlertDialogAction>
+                        <AlertDialogAction
+                          onClick={handleReject}
+                          disabled={isSubmitting}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          {isSubmitting ? "Rejecting..." : "Reject Request"}
+                        </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -378,25 +377,22 @@ export default function AdminRequestDetailPage() {
                 <CardTitle>Citizen Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <User className="h-5 w-5 mt-0.5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{request.Citizen?.UserName || "Unknown"}</p>
-                    <p className="text-sm text-muted-foreground">{request.Citizen?.Email || "No email provided"}</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <Calendar className="h-5 w-5 mt-0.5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Joined</p>
-                    <p className="text-sm text-muted-foreground">
-                      {request.Citizen?.Created ? new Date(request.Citizen.Created).toLocaleDateString() : "Unknown"}
-                    </p>
-                  </div>
-                </div>
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={`/admin/citizens/${request.Citizen?.id}`}>View Citizen Profile</Link>
-                </Button>
+                {request.Citizen ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-slate-500" />
+                      <div>
+                        <p className="font-medium">{request.Citizen.UserName}</p>
+                        <p className="text-sm text-slate-500">{request.Citizen.Email}</p>
+                      </div>
+                    </div>
+                    <Button asChild variant="outline" size="sm" className="w-full bg-transparent">
+                      <Link href={`/admin/citizens/${request.Citizen.id}`}>View Profile</Link>
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-500">No citizen information available</p>
+                )}
               </CardContent>
             </Card>
 
@@ -405,24 +401,49 @@ export default function AdminRequestDetailPage() {
                 <CardTitle>Service Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <p className="font-medium">{request.PublicService?.Title || "Unknown Service"}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {request.PublicService?.Description || "No description provided"}
-                  </p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <MessageSquare className="h-5 w-5 mt-0.5 text-muted-foreground" />
+                {request.PublicService ? (
+                  <>
+                    <div>
+                      <p className="font-medium">{request.PublicService.Title}</p>
+                      <p className="text-sm text-slate-500">{request.PublicService.MachineName}</p>
+                    </div>
+                    <Button asChild variant="outline" size="sm" className="w-full bg-transparent">
+                      <Link href={`/admin/services/${request.PublicService.id}`}>View Service</Link>
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-500">No service information available</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Request Timeline</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-slate-500" />
                   <div>
-                    <p className="font-medium">Association</p>
-                    <p className="text-sm text-muted-foreground">
-                      {request.PublicService?.Association?.Title || "Not assigned"}
-                    </p>
+                    <p className="text-sm font-medium">Submitted</p>
+                    <p className="text-sm text-slate-500">{new Date(request.Created).toLocaleString()}</p>
                   </div>
                 </div>
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={`/admin/services/${request.PublicService?.id}`}>View Service Details</Link>
-                </Button>
+                {(request.Granted || request.Decline) && (
+                  <div className="flex items-center gap-2">
+                    {request.Granted ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">{request.Granted ? "Approved" : "Rejected"}</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(request.Updated || request.Created).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

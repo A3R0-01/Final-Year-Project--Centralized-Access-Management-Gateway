@@ -15,7 +15,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CreateResourceDialog } from "@/components/dialogs/create-resource-dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { DialogFooter } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -50,7 +49,6 @@ export default function ManagerGranteesPage() {
     Association: "",
     Administrator: "",
     Citizen: "",
-    Active: true,
   })
 
   const [deletingGranteeId, setDeletingGranteeId] = useState<string | null>(null)
@@ -137,7 +135,6 @@ export default function ManagerGranteesPage() {
         Association: formData.Association,
         Administrator: formData.Administrator,
         Citizen: formData.Citizen,
-        Active: formData.Active,
       }
 
       console.log("Submitting grantee data:", granteeData)
@@ -183,7 +180,6 @@ export default function ManagerGranteesPage() {
         Association: "",
         Administrator: "",
         Citizen: "",
-        Active: true,
       })
       setIsDialogOpen(false)
       fetchGrantees()
@@ -387,14 +383,6 @@ export default function ManagerGranteesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="Active"
-                    checked={formData.Active}
-                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, Active: checked }))}
-                  />
-                  <Label htmlFor="Active">Active</Label>
-                </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancel
@@ -427,7 +415,7 @@ export default function ManagerGranteesPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Username</TableHead>
-                      <TableHead>Name</TableHead>
+                      <TableHead>Citizen</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Association</TableHead>
                       <TableHead>Created</TableHead>
@@ -439,10 +427,28 @@ export default function ManagerGranteesPage() {
                       <TableRow key={grantee.id}>
                         <TableCell className="font-medium">{grantee.GranteeUserName}</TableCell>
                         <TableCell>
-                          {grantee.FirstName} {grantee.LastName}
+                          {grantee.Citizen ? (
+                            <div className="flex items-center gap-2">
+                              <span>{grantee.Citizen.UserName}</span>
+                              <span className="text-xs text-muted-foreground">({grantee.Citizen.NationalId})</span>
+                            </div>
+                          ) : (
+                            "N/A"
+                          )}
                         </TableCell>
                         <TableCell>{grantee.FirstEmail}</TableCell>
-                        <TableCell>{grantee.Association?.Title || "Not Assigned"}</TableCell>
+                        <TableCell>
+                          {grantee.Association ? (
+                            <div>
+                              <div className="font-medium">{grantee.Association.Title}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {grantee.Association.Department || "No Department"}
+                              </div>
+                            </div>
+                          ) : (
+                            "Not Assigned"
+                          )}
+                        </TableCell>
                         <TableCell>{new Date(grantee.Created).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
@@ -454,7 +460,7 @@ export default function ManagerGranteesPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
                                   disabled={deletingGranteeId === grantee.id}
                                 >
                                   {deletingGranteeId === grantee.id ? (

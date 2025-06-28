@@ -25,7 +25,6 @@ import {
   Home,
   LogOut,
   Menu,
-  Settings,
   Shield,
   User,
   Users,
@@ -414,18 +413,14 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href={`/${role}/profile`} className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                Profile
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/${role}/settings`} className="cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </Link>
-            </DropdownMenuItem>
+            {(role === "citizen" || role === "manager") && (
+              <DropdownMenuItem asChild>
+                <Link href={`/${role}/profile`} className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />

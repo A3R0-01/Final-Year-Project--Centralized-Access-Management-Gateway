@@ -288,10 +288,10 @@ export default function AdminGrantDetailPage() {
                       <p>{new Date(grant.Created || grant.CreatedAt).toLocaleString()}</p>
                     </div>
 
-                    {grant.UpdatedAt && (
+                    {grant.Updated && (
                       <div>
                         <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Last Updated</h3>
-                        <p>{new Date(grant.UpdatedAt).toLocaleString()}</p>
+                        <p>{new Date(grant.Updated).toLocaleString()}</p>
                       </div>
                     )}
                   </TabsContent>
@@ -309,9 +309,7 @@ export default function AdminGrantDetailPage() {
                           <User className="h-5 w-5 text-slate-500" />
                           <div>
                             <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Name</h3>
-                            <p>{`${grant.Request.Citizen.FirstName || ""} ${grant.Request.Citizen.SecondName || ""} ${
-                              grant.Request.Citizen.Surname || ""
-                            }`}</p>
+                            <p>{grant.Request.Citizen.UserName}</p>
                           </div>
                         </div>
 
