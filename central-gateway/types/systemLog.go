@@ -148,17 +148,17 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string, 
 		}
 
 	}
-	fmt.Println("object: ", sl.Object)
-	fmt.Println("Method: ", sl.Method)
-	fmt.Println("User: ", sl.SpecialUser)
-	fmt.Println("Id: ", sl.RecordId)
-	fmt.Println("Citizen: ", sl.Citizen)
+	// fmt.Println("object: ", sl.Object)
+	// fmt.Println("Method: ", sl.Method)
+	// fmt.Println("User: ", sl.SpecialUser)
+	// fmt.Println("Id: ", sl.RecordId)
+	// fmt.Println("Citizen: ", sl.Citizen)
 	return nil
 
 }
 func (sl *SystemLog) getCitizen(request *http.Request, managerCredentials *ManagerLogInCredentials) error {
 	authenticationHeader := request.Header.Get("Authorization")
-	fmt.Println(authenticationHeader + "the header token")
+	// fmt.Println(authenticationHeader + "the header token")
 	req, err := http.NewRequest("GET", CentralDomain+"citizen/stuff/", nil)
 	if err != nil {
 		return err
@@ -226,7 +226,7 @@ func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentia
 		Service:   sl.RecordId,
 		IpAddress: sl.IpAddress,
 	}
-	fmt.Println(session)
+	// fmt.Println(session)
 	// fmt.Println("log: " + CentralDomain + "service/" + sl.RecordId)
 	req, err := http.NewRequest("GET", CentralDomain+"service/"+sl.RecordId+"/", nil)
 	if err != nil {
@@ -272,7 +272,7 @@ func (sl *SystemLog) CheckSessions(managerCredentials *ManagerLogInCredentials) 
 	if sl.IpAddress == "unknown" || sl.IpAddress == "" {
 		return fmt.Errorf("Authentication Failed")
 	}
-	fmt.Println("IpAddress: ", sl.IpAddress, "Service: "+sl.RecordId)
+	// fmt.Println("IpAddress: ", sl.IpAddress, "Service: "+sl.RecordId)
 	sessionReq, err := http.NewRequest("GET", CentralDomain+"manager/session/?Service__PublicId="+sl.RecordId+"&IpAddress="+sl.IpAddress, nil)
 	if err != nil {
 		return fmt.Errorf("failed to get session: 1")
@@ -295,7 +295,7 @@ func (sl *SystemLog) CheckSessions(managerCredentials *ManagerLogInCredentials) 
 		return fmt.Errorf("credentials decoding failed: check session")
 	}
 	found := false
-	fmt.Println(respContainer)
+	// fmt.Println(respContainer)
 	serviceSessionFound := ServiceSession{}
 	for _, serviceSession := range respContainer {
 		if serviceSession.Expired {

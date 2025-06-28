@@ -59,7 +59,7 @@ func NewHTTPHandler(sets []*serviceEndpoint.Set, server *system.Server, logger l
 func makeDecoderHttpServiceRequest(server *system.Server) httptransport.DecodeRequestFunc {
 	return func(ctx context.Context, request *http.Request) (req interface{}, err error) {
 		auth := types.NewAuthenticator(request)
-		normalLog.Println(auth.Request.Header.Get("Authorization"))
+		// normalLog.Println(auth.Request.Header.Get("Authorization"))
 		if err := auth.PopulateAuthenticate(&server.EndPoints, &server.Credentials); err != nil {
 			return nil, err
 		}

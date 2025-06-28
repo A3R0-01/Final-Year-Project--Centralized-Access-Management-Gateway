@@ -71,7 +71,7 @@ func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator
 
 		var modified []byte
 		modified = decompressed
-		fmt.Println(auth.SystemLog.GetSpecialUser() + "\n\n")
+		// fmt.Println(auth.SystemLog.GetSpecialUser() + "\n\n")
 		if strings.Contains(contentType, "text/html") {
 
 			targetURL := srvc.Endpoint.URL.Scheme + "://" + srvc.Endpoint.URL.Host
@@ -111,7 +111,7 @@ func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator
 		}
 
 		// Set updated body and headers
-		fmt.Println("the content length: \n", finalBody.Len(), "     "+strconv.Itoa(finalBody.Len()))
+		// fmt.Println("the content length: \n", finalBody.Len(), "     "+strconv.Itoa(finalBody.Len()))
 		resp.Body = io.NopCloser(&finalBody)
 		resp.ContentLength = int64(finalBody.Len())
 		resp.Header.Set("Content-Length", strconv.Itoa(finalBody.Len()))
@@ -128,7 +128,6 @@ func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator
 		auth.Code = &response.StatusCode
 		return nil
 	}
-	normalLog.Println("this is the proxy: ", srvc.Proxy)
 	auth.Proxy = &proxy
 	return auth, nil
 }

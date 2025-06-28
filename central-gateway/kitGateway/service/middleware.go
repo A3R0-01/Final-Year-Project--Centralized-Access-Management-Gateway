@@ -51,7 +51,7 @@ func (md *LoggingMiddleware) LogData(auth *types.Authenticator) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal log data")
 	}
-	fmt.Println(logOutput)
+	// fmt.Println(logOutput)
 	req, err := http.NewRequest("POST", types.CentralDomain+"manager/log/manager/", bytes.NewBuffer(jsonLog))
 	if err != nil {
 		return fmt.Errorf("failed create the request to push the log")

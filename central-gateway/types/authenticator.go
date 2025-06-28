@@ -27,8 +27,6 @@ func (auth *Authenticator) PopulateAuthenticate(endpoints *MapEndPoint, managerC
 	if err != nil {
 		return err
 	}
-	fmt.Println("\n")
-	fmt.Println(map[string]string{"service": auth.ServiceMachineName, "serviceId": auth.ServiceId})
 	serviceDetails := map[string]string{"service": auth.ServiceMachineName, "serviceId": auth.ServiceId}
 	return auth.SystemLog.Populate(auth.Request, serviceDetails, managerCredentials)
 }
@@ -58,7 +56,6 @@ func (auth *Authenticator) GetServiceName(r string) string {
 	parts := strings.FieldsFunc(r, func(rw rune) bool {
 		return rw == '/'
 	})
-	log.Println("service accessed", parts[0])
 	return parts[0]
 }
 

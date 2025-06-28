@@ -23,7 +23,7 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
     def get_object(self):
         id = self.kwargs['pk']
         obj = None
-        for func in [self.getQ_PublicService_Association, self.getQ_PublicService_Department, self.getQ_PublicService_Restricted, self.getQ_PublicService_Service]:
+        for func in [self.getQ_PublicService_UnRestricted, self.getQ_PublicService_Granted, self.getQ_PublicService_Association, self.getQ_PublicService_Department, self.getQ_PublicService_Restricted, self.getQ_PublicService_Service]:
             try:
                 obj = func().get(PublicId=id)
                 if obj:break
@@ -49,6 +49,7 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
             serializer : AbstractModelSerializer = SiteManagerServiceSessionSerializer(data=data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer=serializer)
+            print('created session')
         except(IntegrityError):
             raise ValidationError('Invalid Data: make sure that all referenced data follows the guidelines')
 
@@ -107,7 +108,7 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
         by_service_permission = self.getQ_PublicService_Service()
         by_publicity = self.getQ_PublicService_UnRestricted()
         by_grant = self.getQ_PublicService_Granted()
-        objects =  by_publicity.union(by_department_permission).union(by_association_permission).union(by_service_permission)
+        objects =  by_publicity.union(by_department_permission).union(by_association_permission).union(by_service_permission).union(by_grant)
         for obj in objects:
             self.createSessions(obj)
         by_restriction = self.getQ_PublicService_UnRestricted()
