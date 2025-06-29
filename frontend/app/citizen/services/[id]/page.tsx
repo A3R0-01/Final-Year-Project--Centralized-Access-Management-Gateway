@@ -195,26 +195,25 @@ export default function ServiceDetailPage() {
                           </>
                         )}
                       </Badge>
-                      {service.Restricted ? (
-                        <Button asChild size="sm" className="w-fit">
+                      <Button onClick={handleAccessService} disabled={isAccessingService} size="sm" className="w-fit">
+                        {isAccessingService ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Accessing...
+                          </>
+                        ) : (
+                          <>
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Access Service
+                          </>
+                        )}
+                      </Button>
+                      {service.Restricted && (
+                        <Button asChild size="sm" variant="outline" className="w-fit bg-transparent">
                           <Link href={`/citizen/requests?service=${service.id}`}>
                             <Plus className="h-4 w-4 mr-1" />
                             Make Request
                           </Link>
-                        </Button>
-                      ) : (
-                        <Button onClick={handleAccessService} disabled={isAccessingService} size="sm" className="w-fit">
-                          {isAccessingService ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Accessing...
-                            </>
-                          ) : (
-                            <>
-                              <ExternalLink className="h-4 w-4 mr-1" />
-                              Access Service
-                            </>
-                          )}
                         </Button>
                       )}
                     </div>

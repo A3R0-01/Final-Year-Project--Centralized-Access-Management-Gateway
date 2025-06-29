@@ -56,6 +56,16 @@ func (srvc *BasicService) Serve(auth *types.Authenticator) (*types.Authenticator
 	proxy := *srvc.Proxy
 	newProxy := &proxy
 	proxy.ModifyResponse = func(resp *http.Response) error {
+		// Rewrite headers pointing to original service
+		for key, values := range resp.Header {
+			for i, val := range values {
+				if strings.Contains(val, srvc.Endpoint.URL.Host) {
+					updated := strings.Replace(val, srvc.Endpoint.URL.String(), types.GatewayDomain+"/"+srvc.Endpoint.MachineName, 1)
+					resp.Header[key][i] = updated
+				}
+			}
+		}
+
 		contentType := resp.Header.Get("Content-Type")
 
 		encoding := resp.Header.Get("Content-Encoding")

@@ -37,7 +37,7 @@ class AdministratorAssociationModelViewSet(AbstractAdministratorModelViewSet):
         if hasattr(self.request.user, 'administrator'):
             if hasattr(self.request.user.administrator, 'department'):
                 queries = self.get_queries()
-                queries['Department'] = self.request.user.administrator.department
+                queries['Department__PublicId'] = self.request.user.administrator.department.PublicId.hex
                 # print(admin_department)
                 # print(self.serializer_class.Meta.model.objects.filter(Department=admin_department))
                 return self.serializer_class.Meta.model.objects.filter(**queries)

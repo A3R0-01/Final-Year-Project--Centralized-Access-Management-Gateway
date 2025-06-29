@@ -26,12 +26,14 @@ services:
       - RUDI_URL=http://127.0.0.1:8002
       - RUDI_URL2=http://127.0.0.1:8001
       - CENTRAL_ACCESS_URL=http://172.17.0.1:8000/api/
-
+  
   nextjs:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: nextjs-dev
+    depends_on:
+      - central_gateway
     ports:
       - "3001:3000"
     volumes:
@@ -84,7 +86,6 @@ services:
       - POSTGRES_PASSWORD=bsrvnt
     command: >
       sh -c "python manage.py migrate &&
-             python manage.py loaddata data.json &&
              python manage.py runserver 0.0.0.0:8000"
     depends_on:
       - core_access_db

@@ -47,11 +47,15 @@ func (auth *Authenticator) UrlData(endpoints *MapEndPoint) error {
 		json.NewEncoder(auth.ResponseWriter).Encode(data)
 		return fmt.Errorf("service not found")
 	}
+	if path == "/emhare/" {
+		path = "/emhare/Users/login/"
+	}
 	auth.ServiceId = endPoint.ServiceId
 	auth.Request.URL.Path = strings.Replace(path, auth.ServiceMachineName, "/"+endPoint.FixedPath+"/", 1)
 	auth.Request.URL.Path = RefineUrl(auth.Request.URL.Path)
 	return nil
 }
+
 func (auth *Authenticator) GetServiceName(r string) string {
 	parts := strings.FieldsFunc(r, func(rw rune) bool {
 		return rw == '/'

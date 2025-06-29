@@ -17,7 +17,6 @@ This document provides a comprehensive guideline for the "Centralized Access Man
     * Grafana Instructions
 7.  **Further Development and Improvements**
 
-
 ## 1\. Project Overview
 
 The Centralized Access Management Gateway is designed to provide a robust and secure system for managing user access to various public services. It aims to centralize user authentication, authorization, and service access requests, ensuring controlled and logged interactions within a multi-tiered administrative and citizen-facing environment. The system facilitates a streamlined process for citizens to request and gain access to services, while providing various levels of administrative control for government entities to manage these services and user permissions.
@@ -46,7 +45,7 @@ The project leverages a modern and robust technology stack, chosen for its effic
       * **`django-prometheus`**: A library that exposes Prometheus metrics directly from the Django application, enabling detailed monitoring of the backend.
   * **Frontend**:
       * **Next.js (React/TypeScript)**: A React framework that supports server-side rendering and static site generation, enhancing performance and SEO. TypeScript ensures type safety and improves code quality.
-      * **Tailwind CSS**: A highly customizable, utility-first CSS framework that speeds up UI development by providing low-level utility classes.
+      * **Tailwind CSS**: A utility-first CSS framework that speeds up UI development by providing low-level utility classes.
       * **Shadcn UI**: A collection of re-usable components built with Radix UI and Tailwind CSS, designed to be easily customizable and integrated into Next.js projects.
   * **DevOps/Monitoring**:
       * **Docker & Docker Compose**: Used for containerization of all services, ensuring consistent development, testing, and production environments, and simplifying service orchestration.
@@ -113,6 +112,7 @@ The Site Manager Portal provides the highest level of administrative control, ov
   * **User Management**: Registration, login, and profile management for all user types (Citizen, Site Manager, Administrator, Grantee). Authentication is handled via JWT.
   * **Department and Association Management**: Creation, viewing, and modification of government departments and their associated entities.
   * **Public Service Management**: Defining and managing public services, including their accessibility, associated grantees, and allowed interaction methods (GET, POST, PATCH, DELETE).
+  * **Important Note on Service Availability**: After a new service is successfully registered or modified in the Core Access Management backend, it will become accessible through the Central Gateway only after a **reboot of the Central Gateway**. It is recommended that a gateway reboot be undertaken once every day to ensure all newly registered services are discoverable and operational.
   * **Request and Grant Workflow**: Citizens can request services, and authorized grantees or administrators can approve or reject these requests, issuing grants that define access validity periods.
   * **Permission System**: A granular permission system allows administrators and grantees to define who can access specific services based on various criteria (citizen, department, association, service, time-based).
   * **System Logging**: Comprehensive logging of user activities and system interactions for auditing and monitoring purposes.
@@ -176,7 +176,7 @@ To enhance your monitoring capabilities, you can import the following pre-built 
         3.  Click "Load".
         4.  Select "Prometheus" as the data source when prompted.
         5.  Click "Import".
-      * **Source**: [Django Application Metrics Dashboard](https://grafana.com/grafana/dashboards/17658-django/)
+      * **Source**: [https://grafana.com/grafana/dashboards/17658-django/](https://grafana.com/grafana/dashboards/17658-django/)
 
 2.  **Django Prometheus Dashboard** (ID: 7996)
 
@@ -187,7 +187,7 @@ To enhance your monitoring capabilities, you can import the following pre-built 
         3.  Click "Load".
         4.  Select "Prometheus" as the data source when prompted.
         5.  Click "Import".
-      * **Source**: [Django Prometheus Dashboard](https://grafana.com/grafana/dashboards/7996-django-prometheus/)
+      * **Source**: [https://grafana.com/grafana/dashboards/7996-django-prometheus/](https://grafana.com/grafana/dashboards/7996-django-prometheus/)
 
 3.  **Go Processes Overview** (ID: 6671)
 
@@ -198,7 +198,7 @@ To enhance your monitoring capabilities, you can import the following pre-built 
         3.  Click "Load".
         4.  Select "Prometheus" as the data source when prompted.
         5.  Click "Import".
-      * **Source**: [Go Processes Dashboard](https://grafana.com/grafana/dashboards/6671-go-processes/)
+      * **Source**: [https://grafana.com/grafana/dashboards/6671-go-processes/](https://grafana.com/grafana/dashboards/6671-go-processes/)
 
 4.  **Django Requests Overview** (ID: 17616)
 
@@ -209,7 +209,7 @@ To enhance your monitoring capabilities, you can import the following pre-built 
         3.  Click "Load".
         4.  Select "Prometheus" as the data source when prompted.
         5.  Click "Import".
-      * **Source**: [Django Requests Overview Dashboard](https://grafana.com/grafana/dashboards/17616-django-requests-overview/)
+      * **Source**: [https://grafana.com/grafana/dashboards/17616-django-requests-overview/](https://grafana.com/grafana/dashboards/17616-django-requests-overview/)
 
 After importing, these dashboards will appear under the "Dashboards" section in Grafana, allowing you to monitor the various components of the Centralized Access Management Gateway effectively.
 

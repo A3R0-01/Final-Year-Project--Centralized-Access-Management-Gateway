@@ -87,11 +87,16 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
         return objects
     
     def getQ_PublicService_UnRestricted(self):
-        objects = self.serializer_class.Meta.model.objects.filter(Restricted=False)
+        queries = self.get_queries()
+        queries['Restricted'] = False
+        objects = self.serializer_class.Meta.model.objects.filter(**queries)
         return objects
 
     def getQ_PublicService_Restricted(self):
-        return self.serializer_class.Meta.model.objects.filter(Restricted=True, Visibility=True)
+        queries = self.get_queries()
+        queries['Restricted'] = True
+        queries['Visibility'] = True
+        return self.serializer_class.Meta.model.objects.filter(**queries)
     
     def getQ_PublicService_Granted(self):
         requests = Request.objects.filter(Citizen__PublicId=self.request.user.PublicId.hex)
@@ -100,7 +105,9 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
             if hasattr(req, 'grant'):
                 if req.grant.granted:
                     services.append(req.PublicService.PublicId)
-        return self.serializer_class.Meta.model.objects.filter(PublicId__in=services)
+        queries = self.get_queries()
+        queries['PublicId__in'] = services
+        return self.serializer_class.Meta.model.objects.filter(**queries)
 
     def get_queryset(self):
         by_association_permission = self.getQ_PublicService_Association()
