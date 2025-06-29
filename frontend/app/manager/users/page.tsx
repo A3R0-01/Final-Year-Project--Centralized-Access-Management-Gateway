@@ -187,7 +187,7 @@ export default function ManagerUsersPage() {
                             <TableCell>{new Date(citizen.Created).toLocaleDateString()}</TableCell>
                             <TableCell className="text-right">
                               <Button asChild variant="outline" size="sm">
-                                <Link href={`/manager/users/citizen/${citizen.id}`}>View</Link>
+                                <Link href={`/manager/citizens/${citizen.id}`}>View</Link>
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -248,10 +248,10 @@ export default function ManagerUsersPage() {
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
                                 <Button asChild variant="outline" size="sm">
-                                  <Link href={`/manager/users/administrator/${admin.id}`}>View</Link>
+                                  <Link href={`/manager/administrators/${admin.id}`}>View</Link>
                                 </Button>
                                 <Button asChild variant="outline" size="sm">
-                                  <Link href={`/manager/users/administrator/${admin.id}/edit`}>Edit</Link>
+                                  <Link href={`/manager/administrators/${admin.id}/edit`}>Edit</Link>
                                 </Button>
                               </div>
                             </TableCell>
@@ -319,10 +319,10 @@ export default function ManagerUsersPage() {
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
                                 <Button asChild variant="outline" size="sm">
-                                  <Link href={`/manager/users/grantee/${grantee.id}`}>View</Link>
+                                  <Link href={`/manager/grantees/${grantee.id}`}>View</Link>
                                 </Button>
                                 <Button asChild variant="outline" size="sm">
-                                  <Link href={`/manager/users/grantee/${grantee.id}/edit`}>Edit</Link>
+                                  <Link href={`/manager/grantees/${grantee.id}/edit`}>Edit</Link>
                                 </Button>
                               </div>
                             </TableCell>

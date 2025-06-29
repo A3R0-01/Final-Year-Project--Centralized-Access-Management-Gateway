@@ -162,7 +162,7 @@ export default function AdminUsersPage() {
                             <TableCell>{new Date(citizen.Created).toLocaleDateString()}</TableCell>
                             <TableCell className="text-right">
                               <Button asChild variant="outline" size="sm">
-                                <Link href={`/admin/users/citizen/${citizen.id}`}>View</Link>
+                                <Link href={`/admin/citizens/${citizen.id}`}>View</Link>
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -223,10 +223,10 @@ export default function AdminUsersPage() {
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
                                 <Button asChild variant="outline" size="sm">
-                                  <Link href={`/admin/users/grantee/${grantee.id}`}>View</Link>
+                                  <Link href={`/admin/grantees/${grantee.id}`}>View</Link>
                                 </Button>
                                 <Button asChild variant="outline" size="sm">
-                                  <Link href={`/admin/users/grantee/${grantee.id}/edit`}>Edit</Link>
+                                  <Link href={`/admin/grantees/${grantee.id}/edit`}>Edit</Link>
                                 </Button>
                               </div>
                             </TableCell>

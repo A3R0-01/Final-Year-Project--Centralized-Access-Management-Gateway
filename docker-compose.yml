@@ -8,6 +8,24 @@ services:
   #     - 8020:8020
   #   depends_on:
   #     - core_access
+  central_gateway:
+    build:
+      context: ./central-gateway
+      dockerfile: Dockerfile
+    container_name: central_gateway-container
+    ports:
+      - "8020:8020"
+    depends_on:
+      - core_access
+    restart: unless-stopped
+    volumes:
+      # For development - mount source code
+      - ./central-gateway:/app
+    environment:
+      - CENTRAL_DOMAIN=http://172.17.0.1:8000/api/
+      - RUDI_URL=http://127.0.0.1:8002
+      - RUDI_URL2=http://127.0.0.1:8001
+      - CENTRAL_ACCESS_URL=http://172.17.0.1:8000/api/
 
   nextjs:
     build:

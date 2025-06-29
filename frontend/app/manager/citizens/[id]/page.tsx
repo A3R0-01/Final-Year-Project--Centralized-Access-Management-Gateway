@@ -7,14 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { directApi } from "@/lib/api-direct"
-import { ArrowLeft, Edit, User, Mail, Phone, Calendar, Shield, FileText, Clock } from "lucide-react"
+import { ArrowLeft, Edit, User, Mail, Phone, Calendar, Shield } from "lucide-react"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import Link from "next/link"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 export default function ManagerCitizenDetailPage() {
   const { id } = useParams()
@@ -51,40 +49,8 @@ export default function ManagerCitizenDetailPage() {
       }
     }
 
-    const fetchRequests = async () => {
-      try {
-        // Fetch all requests and filter by citizen
-        const response = await directApi.manager.getRequests()
-        if (response.ok) {
-          const data = await response.json()
-          // Filter requests that belong to this citizen
-          const citizenRequests = data.filter((request: any) => request.Citizen && request.Citizen.id === id)
-          setRequests(citizenRequests)
-        }
-      } catch (err) {
-        console.error("Error fetching requests:", err)
-      }
-    }
-
-    const fetchGrants = async () => {
-      try {
-        // Fetch all grants and filter by citizen
-        const response = await directApi.manager.getGrants()
-        if (response.ok) {
-          const data = await response.json()
-          // Filter grants that belong to this citizen
-          const citizenGrants = data.filter((grant: any) => grant.Citizen && grant.Citizen.id === id)
-          setGrants(citizenGrants)
-        }
-      } catch (err) {
-        console.error("Error fetching grants:", err)
-      }
-    }
-
     if (id) {
       fetchCitizen()
-      fetchRequests()
-      fetchGrants()
     }
   }, [id, toast])
 
@@ -198,9 +164,6 @@ export default function ManagerCitizenDetailPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
                 <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="requests">Requests</TabsTrigger>
-                <TabsTrigger value="grants">Grants</TabsTrigger>
-                <TabsTrigger value="activity">Activity</TabsTrigger>
               </TabsList>
 
               <TabsContent value="details" className="space-y-6">
@@ -259,96 +222,6 @@ export default function ManagerCitizenDetailPage() {
                     </div>
                   </div>
                 )}
-              </TabsContent>
-
-              <TabsContent value="requests">
-                {requests.length > 0 ? (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Service</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Submitted</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {requests.map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell className="font-medium">{request.Service?.Title || "Unknown Service"}</TableCell>
-                            <TableCell>{getStatusBadge(request.Status)}</TableCell>
-                            <TableCell>
-                              {request.Created ? format(new Date(request.Created), "PPP") : "Unknown"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button asChild variant="outline" size="sm">
-                                <Link href={`/manager/requests/${request.id}`}>
-                                  <FileText className="h-4 w-4 mr-2" />
-                                  View
-                                </Link>
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>This citizen has not submitted any requests yet.</p>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="grants">
-                {grants.length > 0 ? (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Service</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Granted</TableHead>
-                          <TableHead>Expires</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {grants.map((grant) => (
-                          <TableRow key={grant.id}>
-                            <TableCell className="font-medium">{grant.Service?.Title || "Unknown Service"}</TableCell>
-                            <TableCell>{getStatusBadge(grant.Status)}</TableCell>
-                            <TableCell>{grant.Created ? format(new Date(grant.Created), "PPP") : "Unknown"}</TableCell>
-                            <TableCell>
-                              {grant.ExpiryDate ? format(new Date(grant.ExpiryDate), "PPP") : "No expiry"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button asChild variant="outline" size="sm">
-                                <Link href={`/manager/grants/${grant.id}`}>
-                                  <Clock className="h-4 w-4 mr-2" />
-                                  View
-                                </Link>
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>This citizen has not received any grants yet.</p>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="activity">
-                <div className="text-center py-8 text-gray-500">
-                  <p>Activity history will be displayed here.</p>
-                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

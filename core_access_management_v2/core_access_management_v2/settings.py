@@ -181,6 +181,18 @@ SYSTEM_LOG_KAFKA_SETTINGS = {
 }
 CORS_ALLOW_ALL_ORIGINS = True
 DEFAULT_SESSION_TIME = 2 
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '172.17.0.1',
+    '0.0.0.0',
+    'core_access',
+    'core-access',
+    # Add these variations to be safe
+    'core_access:8000',
+    'core-access:8000',
+    'host.docker.internal',
+]
 # CORS_ALLOWED_ORIGINS = [
 #     "http://localhost:3001",  # React/Next.js frontend
 #     "http://127.0.0.1:3001",

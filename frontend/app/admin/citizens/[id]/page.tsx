@@ -1,7 +1,5 @@
 "use client"
 
-import Link from "next/link"
-
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import DashboardLayout from "@/components/layouts/dashboard-layout"
@@ -9,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { directApi } from "@/lib/api-direct"
-import { ArrowLeft, Edit, User, Mail, Phone, MapPin, Calendar, Shield, FileText, Award } from "lucide-react"
+import { ArrowLeft, Edit, User, Mail, Phone, MapPin, Calendar, Shield } from "lucide-react"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -51,34 +49,8 @@ export default function AdminCitizenDetailPage() {
       }
     }
 
-    const fetchCitizenRequests = async () => {
-      try {
-        const response = await directApi.admin.getCitizenRequests(id as string)
-        if (response.ok) {
-          const data = await response.json()
-          setRequests(data)
-        }
-      } catch (err) {
-        console.error("Error fetching citizen requests:", err)
-      }
-    }
-
-    const fetchCitizenGrants = async () => {
-      try {
-        const response = await directApi.admin.getCitizenGrants(id as string)
-        if (response.ok) {
-          const data = await response.json()
-          setGrants(data)
-        }
-      } catch (err) {
-        console.error("Error fetching citizen grants:", err)
-      }
-    }
-
     if (id) {
       fetchCitizen()
-      fetchCitizenRequests()
-      fetchCitizenGrants()
     }
   }, [id, toast])
 
@@ -185,9 +157,6 @@ export default function AdminCitizenDetailPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
                 <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="requests">Requests</TabsTrigger>
-                <TabsTrigger value="grants">Grants</TabsTrigger>
-                <TabsTrigger value="activity">Activity</TabsTrigger>
               </TabsList>
 
               <TabsContent value="details" className="space-y-6">
@@ -253,96 +222,6 @@ export default function AdminCitizenDetailPage() {
                     </div>
                   </div>
                 )}
-              </TabsContent>
-
-              <TabsContent value="requests">
-                {requests.length > 0 ? (
-                  <div className="space-y-4">
-                    {requests.map((request) => (
-                      <Card key={request.id}>
-                        <CardHeader className="pb-2">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <CardTitle className="text-base">{request.Subject}</CardTitle>
-                              <CardDescription>
-                                {new Date(request.Created).toLocaleDateString()} -{" "}
-                                {request.PublicService?.Title || "Unknown Service"}
-                              </CardDescription>
-                            </div>
-                            <Badge
-                              variant={request.Granted ? "success" : request.Decline ? "destructive" : "secondary"}
-                            >
-                              {request.Granted ? "Approved" : request.Decline ? "Rejected" : "Pending"}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pb-2">
-                          <p className="text-sm line-clamp-2">{request.Message}</p>
-                        </CardContent>
-                        <div className="px-6 pb-4">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/admin/requests/${request.id}`}>
-                              <FileText className="h-4 w-4 mr-2" />
-                              View Details
-                            </Link>
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>This citizen has not submitted any requests yet.</p>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="grants">
-                {grants.length > 0 ? (
-                  <div className="space-y-4">
-                    {grants.map((grant) => (
-                      <Card key={grant.id}>
-                        <CardHeader className="pb-2">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <CardTitle className="text-base">{grant.Title || "Unnamed Grant"}</CardTitle>
-                              <CardDescription>
-                                {new Date(grant.Created).toLocaleDateString()} -{" "}
-                                {grant.PublicService?.Title || "Unknown Service"}
-                              </CardDescription>
-                            </div>
-                            <Badge variant={grant.Active ? "success" : "secondary"}>
-                              {grant.Active ? "Active" : "Inactive"}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pb-2">
-                          <p className="text-sm line-clamp-2">{grant.Description || "No description provided"}</p>
-                        </CardContent>
-                        <div className="px-6 pb-4">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/admin/grants/${grant.id}`}>
-                              <Award className="h-4 w-4 mr-2" />
-                              View Details
-                            </Link>
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Award className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>This citizen has not received any grants yet.</p>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="activity">
-                <div className="text-center py-8 text-gray-500">
-                  <p>Activity history will be displayed here.</p>
-                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -228,25 +228,24 @@ export default function GranteeDashboard() {
               </div>
             ) : recentRequests.length > 0 ? (
               <div className="space-y-2">
-                {recentRequests
-                  .map((request) => (
-                    <Card key={request.id}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-medium">{request.service_name || "Service Request"}</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                              From: {request.citizen_name || "Citizen"} • Submitted on{" "}
-                              {new Date(request.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <Button asChild size="sm">
-                            <Link href={`/grantee/requests/${request.id}`}>Process</Link>
-                          </Button>
+                {recentRequests.map((request) => (
+                  <Card key={request.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-medium">{request.service_name || "Service Request"}</h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            From: {request.citizen_name || "Citizen"} • Submitted on{" "}
+                            {new Date(request.created_at).toLocaleDateString()}
+                          </p>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        <Button asChild size="sm">
+                          <Link href={`/grantee/requests/${request.id}`}>Process</Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             ) : (
               <Card>
@@ -301,9 +300,10 @@ export default function GranteeDashboard() {
                             {grant.status}
                           </span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             ) : (
               <Card>
