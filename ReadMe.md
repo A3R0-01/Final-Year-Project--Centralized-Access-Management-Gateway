@@ -49,7 +49,7 @@ The project leverages a modern and robust technology stack, chosen for its effic
       * **Tailwind CSS**: A highly customizable, utility-first CSS framework that speeds up UI development by providing low-level utility classes.
       * **Shadcn UI**: A collection of re-usable components built with Radix UI and Tailwind CSS, designed to be easily customizable and integrated into Next.js projects.
   * **DevOps/Monitoring**:
-      * **Docker & Docker Compose**: For containerization of all services, ensuring consistent development, testing, and production environments, and simplifying service orchestration.
+      * **Docker & Docker Compose**: Used for containerization of all services, ensuring consistent development, testing, and production environments, and simplifying service orchestration.
       * **Prometheus**: An open-source monitoring system that collects and stores time-series data, ideal for real-time operational analytics.
       * **Grafana**: A leading open-source platform for visualizing data from various sources, including Prometheus, through highly customizable and interactive dashboards.
 
@@ -163,19 +163,55 @@ datasources:
   * This configuration tells Grafana to connect to a Prometheus instance running at `http://prometheus:9090`. The `prometheus` hostname resolves to the Prometheus container within the Docker network.
   * The `isDefault: true` setting ensures that Prometheus is automatically selected as the default data source when creating new dashboards or panels.
 
-**Creating Dashboards in Grafana:**
+**Importing Recommended Dashboards:**
 
-1.  **Explore Data**: After logging in, you can start by exploring the metrics available from Prometheus. Click on "Explore" (compass icon on the left sidebar).
-2.  **Select Data Source**: Ensure "Prometheus" is selected as the data source.
-3.  **Query Metrics**: You can type Prometheus queries (PromQL) in the query editor to visualize metrics. For example, `go_goroutines` for GoLang gateway goroutines, or `django_http_requests_total_by_method_and_view_name` for Django HTTP requests.
-4.  **Create Dashboards**: To build permanent visualizations, navigate to "Dashboards" (dashboard icon) -\> "New Dashboard" -\> "Add new panel".
-      * In the panel editor, select "Prometheus" as the data source.
-      * Write your PromQL queries to define the data series.
-      * Choose appropriate visualization types (Graph, Stat, Gauge, Table, etc.).
-      * Configure axes, legends, and other display options.
-      * Save your dashboard with a descriptive name.
+To enhance your monitoring capabilities, you can import the following pre-built Grafana dashboards:
 
-You can import pre-built dashboards (JSON files) or create custom ones to monitor various aspects of the gateway, backend API, and database performance, along with user activity logs if exposed as metrics.
+1.  **Django Application Metrics** (ID: 17658)
+
+      * **Purpose**: Provides comprehensive metrics for Django applications, including HTTP requests, database queries, and other key performance indicators.
+      * **Instructions**:
+        1.  In Grafana, click on the Dashboards icon (four squares) in the left sidebar, then select "Import".
+        2.  In the "Import via grafana.com" field, enter `17658`.
+        3.  Click "Load".
+        4.  Select "Prometheus" as the data source when prompted.
+        5.  Click "Import".
+      * **Source**: [Django Application Metrics Dashboard](https://grafana.com/grafana/dashboards/17658-django/)
+
+2.  **Django Prometheus Dashboard** (ID: 7996)
+
+      * **Purpose**: A general dashboard for Django applications that are exposing metrics via `django-prometheus`, focusing on requests, database, cache, and other Django-specific metrics.
+      * **Instructions**:
+        1.  In Grafana, click on the Dashboards icon (four squares) in the left sidebar, then select "Import".
+        2.  In the "Import via grafana.com" field, enter `7996`.
+        3.  Click "Load".
+        4.  Select "Prometheus" as the data source when prompted.
+        5.  Click "Import".
+      * **Source**: [Django Prometheus Dashboard](https://grafana.com/grafana/dashboards/7996-django-prometheus/)
+
+3.  **Go Processes Overview** (ID: 6671)
+
+      * **Purpose**: Monitors key metrics for Go applications, such as goroutines, memory usage, garbage collection, and CPU utilization, which are crucial for observing the Central Gateway's health.
+      * **Instructions**:
+        1.  In Grafana, click on the Dashboards icon (four squares) in the left sidebar, then select "Import".
+        2.  In the "Import via grafana.com" field, enter `6671`.
+        3.  Click "Load".
+        4.  Select "Prometheus" as the data source when prompted.
+        5.  Click "Import".
+      * **Source**: [Go Processes Dashboard](https://grafana.com/grafana/dashboards/6671-go-processes/)
+
+4.  **Django Requests Overview** (ID: 17616)
+
+      * **Purpose**: Provides a high-level overview of Django application requests, offering insights into request rates, latencies, and response codes, which helps in identifying performance bottlenecks.
+      * **Instructions**:
+        1.  In Grafana, click on the Dashboards icon (four squares) in the left sidebar, then select "Import".
+        2.  In the "Import via grafana.com" field, enter `17616`.
+        3.  Click "Load".
+        4.  Select "Prometheus" as the data source when prompted.
+        5.  Click "Import".
+      * **Source**: [Django Requests Overview Dashboard](https://grafana.com/grafana/dashboards/17616-django-requests-overview/)
+
+After importing, these dashboards will appear under the "Dashboards" section in Grafana, allowing you to monitor the various components of the Centralized Access Management Gateway effectively.
 
 ## 7\. Further Development and Improvements
 
