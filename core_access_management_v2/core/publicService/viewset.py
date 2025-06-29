@@ -89,6 +89,7 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
     def getQ_PublicService_UnRestricted(self):
         queries = self.get_queries()
         queries['Restricted'] = False
+        queries['Visibility'] = True
         objects = self.serializer_class.Meta.model.objects.filter(**queries)
         return objects
 

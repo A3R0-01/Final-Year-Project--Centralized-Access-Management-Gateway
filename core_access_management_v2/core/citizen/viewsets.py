@@ -51,7 +51,7 @@ class AdministratorCitizenModelViewSet(AbstractAdministratorModelViewSet):
     http_method_names = ('get', 'patch')
     serializer_class = AdministratorCitizenModelSerializer
 class SiteManagerCitizenModelViewSet(AbstractSiteManagerModelViewSet):
-    http_method_names = ('get', 'delete')
+    http_method_names = ('get', 'patch', 'delete')
     permission_classes = (IsAuthenticated,)
     serializer_class = SiteManagerCitizenModelSerializer
 

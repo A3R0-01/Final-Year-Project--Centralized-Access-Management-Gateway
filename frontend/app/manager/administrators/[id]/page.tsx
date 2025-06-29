@@ -5,15 +5,10 @@ import { useParams, useRouter } from "next/navigation"
 import DashboardLayout from "@/components/layouts/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { directApi } from "@/lib/api-direct"
-import { ArrowLeft, Edit, User, Mail, Phone, Calendar, Shield, Building } from "lucide-react"
-import { format } from "date-fns"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
-import Link from "next/link"
+import { ArrowLeft, Edit, User, Building } from "lucide-react"
 
 export default function ManagerAdministratorDetailPage() {
   const { id } = useParams()
@@ -21,9 +16,6 @@ export default function ManagerAdministratorDetailPage() {
   const { toast } = useToast()
   const [administrator, setAdministrator] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("details")
-  const [departments, setDepartments] = useState<any[]>([])
 
   useEffect(() => {
     const fetchAdministrator = async () => {
@@ -38,7 +30,6 @@ export default function ManagerAdministratorDetailPage() {
         }
       } catch (err: any) {
         console.error("Error fetching administrator:", err)
-        setError(err.message || "Failed to load administrator details")
         toast({
           title: "Error",
           description: "Failed to load administrator details",
@@ -49,31 +40,8 @@ export default function ManagerAdministratorDetailPage() {
       }
     }
 
-    const fetchDepartments = async () => {
-      try {
-        // Use Django's filtering pattern with double underscores to filter by Administrator PublicId
-        const url = `${process.env.NEXT_PUBLIC_API_URL}/api/manager/department/?Administrator__PublicId=${id}`
-        const response = await fetch(url, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          setDepartments(data)
-        } else {
-          console.error("Failed to fetch departments")
-        }
-      } catch (err) {
-        console.error("Error fetching departments:", err)
-      }
-    }
-
     if (id) {
       fetchAdministrator()
-      fetchDepartments()
     }
   }, [id, toast])
 
@@ -88,24 +56,13 @@ export default function ManagerAdministratorDetailPage() {
             <div className="h-7 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
           </div>
           <Card>
-            <CardHeader>
-              <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-                <div className="space-y-2">
-                  <div className="h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            <CardContent className="space-y-4 p-6">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="space-y-2">
+                  <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="h-6 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center space-x-2">
-                    <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                    <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </CardContent>
           </Card>
         </div>
@@ -113,35 +70,22 @@ export default function ManagerAdministratorDetailPage() {
     )
   }
 
-  if (error) {
+  if (!administrator) {
     return (
       <DashboardLayout role="manager">
         <div className="container mx-auto py-6">
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-10">
-              <div className="text-red-500 mb-4">
-                <Shield className="h-12 w-12" />
-              </div>
-              <CardTitle className="mb-2">Error Loading Administrator</CardTitle>
-              <CardDescription>{error}</CardDescription>
-              <Button className="mt-6" onClick={() => router.back()}>
-                Go Back
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Administrator not found</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              The administrator you're looking for doesn't exist or you don't have permission to view it.
+            </p>
+            <Button onClick={() => router.push("/manager/administrators")} className="mt-4">
+              Back to Administrators
+            </Button>
+          </div>
         </div>
       </DashboardLayout>
     )
-  }
-
-  if (!administrator) return null
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
   }
 
   return (
@@ -160,127 +104,103 @@ export default function ManagerAdministratorDetailPage() {
           </Button>
         </div>
 
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-12 w-12">
-                <AvatarFallback>
-                  {administrator.AdminUserName ? getInitials(administrator.AdminUserName) : "A"}
-                </AvatarFallback>
-              </Avatar>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <User className="h-5 w-5" />
+                <span>Administrator Information</span>
+              </CardTitle>
+              <CardDescription>Basic administrator details and account information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <CardTitle>{administrator.AdminUserName}</CardTitle>
-                <CardDescription>{administrator.FirstEmail}</CardDescription>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Username</label>
+                <p className="text-lg font-semibold">{administrator.AdministratorUserName}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Primary Email</label>
+                <p className="text-lg">{administrator.FirstEmail}</p>
+              </div>
+
+              {administrator.SecondEmail && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Secondary Email</label>
+                  <p className="text-lg">{administrator.SecondEmail}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Grantee Limit</label>
+                <p className="text-lg font-semibold">{administrator.GranteeLimit}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Account Created</label>
+                <p className="text-lg">{new Date(administrator.Created).toLocaleDateString()}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</label>
+                <p className="text-lg">{new Date(administrator.Updated).toLocaleDateString()}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <User className="h-5 w-5" />
+                <span>Citizen Information</span>
+              </CardTitle>
+              <CardDescription>Associated citizen account details</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {administrator.Citizen ? (
+                <>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Citizen Username</label>
+                    <p className="text-lg font-semibold">{administrator.Citizen.UserName}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">National ID</label>
+                    <p className="text-lg">{administrator.Citizen.NationalId}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Citizen ID</label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">{administrator.Citizen.id}</p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400">No citizen information available</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Building className="h-5 w-5" />
+              <span>System Information</span>
+            </CardTitle>
+            <CardDescription>Administrator system details and metadata</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Administrator ID</label>
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">{administrator.id}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Role</label>
+                <Badge variant="secondary">Administrator</Badge>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="departments">Departments</TabsTrigger>
-                <TabsTrigger value="activity">Activity</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="details" className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Basic Information</h3>
-                  <Separator className="mb-4" />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-500">Username:</span>
-                      <span>{administrator.AdminUserName}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-500">Email:</span>
-                      <span>{administrator.FirstEmail}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-500">Phone:</span>
-                      <span>{administrator.Phone || "Not provided"}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-500">Joined:</span>
-                      <span>
-                        {administrator.Created ? format(new Date(administrator.Created), "PPP") : "Not available"}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Shield className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-500">Status:</span>
-                      <Badge variant={administrator.Active ? "success" : "destructive"}>
-                        {administrator.Active ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                {administrator.AdditionalInfo && Object.keys(administrator.AdditionalInfo).length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">Additional Information</h3>
-                    <Separator className="mb-4" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(administrator.AdditionalInfo).map(([key, value]: [string, any]) => (
-                        <div key={key} className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-500">{key}:</span>
-                          <span>{value?.toString() || "Not provided"}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="departments">
-                {departments.length > 0 ? (
-                  <div className="space-y-4">
-                    {departments.map((department) => (
-                      <Card key={department.id}>
-                        <CardHeader className="pb-2">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <CardTitle className="text-base">{department.Title}</CardTitle>
-                              <CardDescription>
-                                Created on {new Date(department.Created).toLocaleDateString()}
-                              </CardDescription>
-                            </div>
-                            <Badge variant={department.Active ? "success" : "secondary"}>
-                              {department.Active ? "Active" : "Inactive"}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pb-2">
-                          <p className="text-sm line-clamp-2">{department.Description || "No description provided"}</p>
-                        </CardContent>
-                        <div className="px-6 pb-4">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/manager/departments/${department.id}`}>
-                              <Building className="h-4 w-4 mr-2" />
-                              View Department
-                            </Link>
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Building className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>This administrator is not assigned to any departments yet.</p>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="activity">
-                <div className="text-center py-8 text-gray-500">
-                  <p>Activity history will be displayed here.</p>
-                </div>
-              </TabsContent>
-            </Tabs>
           </CardContent>
         </Card>
       </div>

@@ -79,7 +79,7 @@ export default function ServiceDetailPage() {
       // Check if the service is accessible by making a HEAD request
       const accessToken = localStorage.getItem("accessToken")
       const response = await fetch(serviceUrl, {
-        method: "HEAD",
+        method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
