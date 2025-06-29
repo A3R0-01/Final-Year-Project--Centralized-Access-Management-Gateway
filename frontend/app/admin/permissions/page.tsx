@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
-import { directApi } from "@/lib/api-direct"
 import { Shield, Search, Plus, Building, FileText, Briefcase, UserPlus, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -18,7 +17,6 @@ import { CreateResourceDialog } from "@/components/dialogs/create-resource-dialo
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { DialogFooter } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -48,7 +46,6 @@ export default function AdminPermissionsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [services, setServices] = useState<any[]>([])
-  const [grantees, setGrantees] = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
   const [associations, setAssociations] = useState<any[]>([])
   const [citizens, setCitizens] = useState<any[]>([])
@@ -64,11 +61,9 @@ export default function AdminPermissionsPage() {
     PublicService: "",
     Association: "",
     Department: "",
-    Grantee: "",
     Citizens: [] as string[],
     StartTime: formatDateForInput(new Date()),
     EndTime: formatDateForInput(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // 30 days from now
-    Active: true,
     permissionType: "service", // Default to service permission
   })
 
@@ -82,7 +77,6 @@ export default function AdminPermissionsPage() {
 
   useEffect(() => {
     fetchServices()
-    fetchGrantees()
     fetchDepartments()
     fetchAssociations()
     fetchCitizens()
@@ -94,7 +88,11 @@ export default function AdminPermissionsPage() {
 
   const fetchServices = async () => {
     try {
-      const response = await directApi.admin.getServices()
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/service/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
       if (response.ok) {
         const data = await response.json()
         setServices(data)
@@ -104,21 +102,13 @@ export default function AdminPermissionsPage() {
     }
   }
 
-  const fetchGrantees = async () => {
-    try {
-      const response = await directApi.admin.getGrantees()
-      if (response.ok) {
-        const data = await response.json()
-        setGrantees(data)
-      }
-    } catch (error) {
-      console.error("Error fetching grantees:", error)
-    }
-  }
-
   const fetchDepartments = async () => {
     try {
-      const response = await directApi.admin.getDepartments()
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/department/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
       if (response.ok) {
         const data = await response.json()
         setDepartments(data)
@@ -130,7 +120,11 @@ export default function AdminPermissionsPage() {
 
   const fetchAssociations = async () => {
     try {
-      const response = await directApi.admin.getAssociations()
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/association/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
       if (response.ok) {
         const data = await response.json()
         setAssociations(data)
@@ -142,7 +136,11 @@ export default function AdminPermissionsPage() {
 
   const fetchCitizens = async () => {
     try {
-      const response = await directApi.admin.getCitizens()
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/citizen/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
       if (response.ok) {
         const data = await response.json()
         setCitizens(data)
@@ -159,10 +157,6 @@ export default function AdminPermissionsPage() {
 
   const handleServiceChange = (value: string) => {
     setFormData((prev) => ({ ...prev, PublicService: value }))
-  }
-
-  const handleGranteeChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, Grantee: value }))
   }
 
   const handlePermissionTypeChange = (value: string) => {
@@ -204,7 +198,6 @@ export default function AdminPermissionsPage() {
       // Add the specific field based on permission type
       if (formData.permissionType === "service") {
         permissionData.PublicService = formData.PublicService
-        permissionData.Grantee = formData.Grantee
       } else if (formData.permissionType === "association") {
         permissionData.Association = formData.Association
       } else if (formData.permissionType === "department") {
@@ -213,13 +206,16 @@ export default function AdminPermissionsPage() {
 
       // Call the appropriate API endpoint based on permission type
       let response
-      if (formData.permissionType === "service") {
-        response = await directApi.admin.createPermission.service(permissionData)
-      } else if (formData.permissionType === "association") {
-        response = await directApi.admin.createPermission.association(permissionData)
-      } else {
-        response = await directApi.admin.createPermission.department(permissionData)
-      }
+      const endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/admin/permission/${formData.permissionType}/`
+
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify(permissionData),
+      })
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -239,11 +235,9 @@ export default function AdminPermissionsPage() {
         PublicService: "",
         Association: "",
         Department: "",
-        Grantee: "",
         Citizens: [],
         StartTime: formatDateForInput(new Date()),
         EndTime: formatDateForInput(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
-        Active: true,
         permissionType: "service",
       })
       setSelectedCitizens([])
@@ -265,21 +259,33 @@ export default function AdminPermissionsPage() {
     setIsLoading(true)
     try {
       // Fetch department permissions
-      const departmentResponse = await directApi.admin.getPermissions.department()
+      const departmentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/permission/department/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
       if (departmentResponse.ok) {
         const departmentData = await departmentResponse.json()
         setDepartmentPermissions(departmentData)
       }
 
       // Fetch association permissions
-      const associationResponse = await directApi.admin.getPermissions.association()
+      const associationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/permission/association/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
       if (associationResponse.ok) {
         const associationData = await associationResponse.json()
         setAssociationPermissions(associationData)
       }
 
       // Fetch service permissions
-      const serviceResponse = await directApi.admin.getPermissions.service()
+      const serviceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/permission/service/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
       if (serviceResponse.ok) {
         const serviceData = await serviceResponse.json()
         setServicePermissions(serviceData)
@@ -326,28 +332,6 @@ export default function AdminPermissionsPage() {
     setFilteredPermissions(filtered)
   }
 
-  const handlePermissionToggle = async (permission: any, value: boolean) => {
-    try {
-      // In a real implementation, you would update the permission via API
-      // For now, we'll just show a toast
-      toast({
-        title: "Permission updated",
-        description: `Permission ${value ? "granted" : "revoked"} successfully.`,
-        variant: "default",
-      })
-
-      // Refresh permissions after update
-      fetchPermissions()
-    } catch (error) {
-      console.error("Error updating permission:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update permission. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
   const handleDeletePermission = (permission: any) => {
     setPermissionToDelete(permission)
     setDeleteDialogOpen(true)
@@ -358,14 +342,21 @@ export default function AdminPermissionsPage() {
 
     setDeletingId(permissionToDelete.id)
     try {
-      let response
+      let endpoint = ""
       if (activeTab === "departments") {
-        response = await directApi.admin.deletePermission.department(permissionToDelete.id)
+        endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/admin/permission/department/${permissionToDelete.id}/`
       } else if (activeTab === "associations") {
-        response = await directApi.admin.deletePermission.association(permissionToDelete.id)
+        endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/admin/permission/association/${permissionToDelete.id}/`
       } else {
-        response = await directApi.admin.deletePermission.service(permissionToDelete.id)
+        endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/admin/permission/service/${permissionToDelete.id}/`
       }
+
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
 
       if (!response.ok) {
         throw new Error("Failed to delete permission")
@@ -466,38 +457,21 @@ export default function AdminPermissionsPage() {
                   </div>
 
                   {formData.permissionType === "service" && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="PublicService">Service</Label>
-                        <Select value={formData.PublicService} onValueChange={handleServiceChange} required>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a service" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {services.map((service) => (
-                              <SelectItem key={service.id} value={service.id}>
-                                {service.Title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="Grantee">Grantee</Label>
-                        <Select value={formData.Grantee} onValueChange={handleGranteeChange} required>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a grantee" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {grantees.map((grantee) => (
-                              <SelectItem key={grantee.id} value={grantee.id}>
-                                {grantee.GranteeUserName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </>
+                    <div className="space-y-2">
+                      <Label htmlFor="PublicService">Service</Label>
+                      <Select value={formData.PublicService} onValueChange={handleServiceChange} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a service" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {services.map((service) => (
+                            <SelectItem key={service.id} value={service.id}>
+                              {service.Title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   )}
 
                   {formData.permissionType === "association" && (
@@ -590,14 +564,7 @@ export default function AdminPermissionsPage() {
                       />
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="Active"
-                      checked={formData.Active}
-                      onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, Active: checked }))}
-                    />
-                    <Label htmlFor="Active">Active</Label>
-                  </div>
+
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Cancel
@@ -642,10 +609,10 @@ export default function AdminPermissionsPage() {
                 </CardTitle>
                 <CardDescription>
                   {activeTab === "departments"
-                    ? "Manage administrator access to departments"
+                    ? "Manage access permissions to departments"
                     : activeTab === "associations"
-                      ? "Manage grantee access to associations"
-                      : "Manage grantee access to services"}
+                      ? "Manage access permissions to associations"
+                      : "Manage access permissions to services"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -668,6 +635,7 @@ export default function AdminPermissionsPage() {
                           <TableHead>Start Date</TableHead>
                           <TableHead>End Date</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Citizens</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -718,6 +686,11 @@ export default function AdminPermissionsPage() {
                               >
                                 {permission.PermissionOpen ? "Active" : "Inactive"}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-muted-foreground">
+                                {permission.Citizens?.length || 0} assigned
+                              </span>
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end space-x-2">
