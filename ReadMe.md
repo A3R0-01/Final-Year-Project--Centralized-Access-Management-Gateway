@@ -131,7 +131,7 @@ To set up the project locally:
       * This command will initiate the startup sequence for all defined services: the PostgreSQL database, the Django backend, the GoLang gateway, the Next.js frontend, and the monitoring tools (Prometheus and Grafana).
       * Docker Compose will manage the network configuration, volume mounting for persistent data (e.g., PostgreSQL data), and ensure services start in the correct order.
 
-Upon successful execution, the frontend application will be accessible via a web browser (typically at `http://localhost:3000` or a configured port), and the backend APIs, gateway, database, and monitoring tools will be running in the background.
+Upon successful execution, the frontend application will be accessible via a web browser (typically at `http://localhost:3001` or a configured port), and the backend APIs, gateway, database, and monitoring tools will be running in the background.
 
 ### 6.1. Grafana Instructions
 
@@ -139,8 +139,8 @@ Grafana is included in the `docker-compose.yml` setup and configured to automati
 
 **Accessing Grafana:**
 
-1.  Once `docker-compose up` is successfully run, Grafana should be accessible in your web browser, typically at `http://localhost:3001` (or the port mapped in your `docker-compose.yml` for Grafana).
-2.  The default Grafana login credentials are `admin` for both username and password. You will likely be prompted to change the password on first login.
+1.  Once `docker-compose up` is successfully run, Grafana should be accessible in your web browser, typically at `http://localhost:3000` (or the port mapped in your `docker-compose.yml` for Grafana).
+2.  The default Grafana login credentials are `admin` for username and `bsrvnt` for password. You will likely be prompted to change the password on first login.
 
 **Pre-configured Data Source:**
 

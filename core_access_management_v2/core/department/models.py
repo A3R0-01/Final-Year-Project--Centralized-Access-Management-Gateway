@@ -7,7 +7,7 @@ class DepartmentManager(AbstractManager):
 
 class Department(AbstractModel):
     Title = models.CharField(max_length=100, unique=True)
-    Administrator = models.OneToOneField(to='administrator.Administrator', on_delete=models.PROTECT)
+    Administrator = models.OneToOneField(to='administrator.Administrator', on_delete=models.CASCADE)
     Description = models.TextField()
     Email = models.EmailField(unique=True)
     Telephone = models.CharField(unique=True)
