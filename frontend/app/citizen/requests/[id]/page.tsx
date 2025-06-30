@@ -92,7 +92,7 @@ export default function RequestDetailPage() {
 
       // First, make a HEAD request to check if the service is accessible
       const response = await fetch(request.PublicService.URL, {
-        method: "HEAD",
+        method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
