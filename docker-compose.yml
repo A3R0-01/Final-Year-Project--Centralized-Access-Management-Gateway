@@ -11,7 +11,7 @@ services:
   central_gateway:
     build:
       context: ./central-gateway
-      dockerfile: Dockerfile
+      dockerfile: DockerFile
     container_name: central_gateway-container
     ports:
       - "8020:8020"
@@ -86,6 +86,7 @@ services:
       - POSTGRES_PASSWORD=bsrvnt
     command: >
       sh -c "python manage.py migrate &&
+             python manage.py loaddata data.json &&
              python manage.py runserver 0.0.0.0:8000"
     depends_on:
       - core_access_db
