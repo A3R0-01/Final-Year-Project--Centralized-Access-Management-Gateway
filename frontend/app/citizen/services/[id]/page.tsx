@@ -208,14 +208,14 @@ export default function ServiceDetailPage() {
                           </>
                         )}
                       </Button>
-                      {service.Restricted && (
+                      {/* {service.Restricted && (
                         <Button asChild size="sm" variant="outline" className="w-fit bg-transparent">
                           <Link href={`/citizen/requests?service=${service.id}`}>
                             <Plus className="h-4 w-4 mr-1" />
                             Make Request
                           </Link>
                         </Button>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </CardHeader>

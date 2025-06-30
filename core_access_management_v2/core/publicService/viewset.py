@@ -20,10 +20,11 @@ import ipaddress
 class CitizenPublicServiceViewSet(AbstractModelViewSet):
     http_method_names : tuple[str] = ('get',)
     serializer_class = CitizenPublicServiceSerializer
+
     def get_object(self):
         id = self.kwargs['pk']
         obj = None
-        for func in [self.getQ_PublicService_UnRestricted, self.getQ_PublicService_Granted, self.getQ_PublicService_Association, self.getQ_PublicService_Department, self.getQ_PublicService_Restricted, self.getQ_PublicService_Service]:
+        for func in [self.getQ_PublicService_UnRestricted, self.getQ_PublicService_Granted, self.getQ_PublicService_Association, self.getQ_PublicService_Department, self.getQ_PublicService_Service]:
             try:
                 obj = func().get(PublicId=id)
                 if obj:break
@@ -119,7 +120,7 @@ class CitizenPublicServiceViewSet(AbstractModelViewSet):
         objects =  by_publicity.union(by_department_permission).union(by_association_permission).union(by_service_permission).union(by_grant)
         for obj in objects:
             self.createSessions(obj)
-        by_restriction = self.getQ_PublicService_UnRestricted()
+        by_restriction = self.getQ_PublicService_Restricted()
         return objects.union(by_restriction)
     
     def normalize_ip(self, ip_str):

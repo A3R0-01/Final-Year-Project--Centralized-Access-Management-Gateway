@@ -131,10 +131,10 @@ export default function AdminCitizenDetailPage() {
             </Button>
             <h1 className="text-2xl font-bold">Citizen Details</h1>
           </div>
-          <Button onClick={() => router.push(`/admin/citizens/${id}/edit`)}>
+          {/* <Button onClick={() => router.push(`/admin/citizens/${id}/edit`)}>
             <Edit className="h-4 w-4 mr-2" />
             Edit Citizen
-          </Button>
+          </Button> */}
         </div>
 
         <Card>

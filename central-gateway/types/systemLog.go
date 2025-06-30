@@ -15,7 +15,7 @@ import (
 type SystemLogInterface interface {
 	Populate(request *http.Request, service map[string]string, managerCredentials *ManagerLogInCredentials) error
 	getCitizen(request *http.Request, managerCredentials *ManagerLogInCredentials) error
-	CheckSessions(managerCredentials *ManagerLogInCredentials) error
+	CheckSessions(managerCredentials *ManagerLogInCredentials, authenticationHeader string) error
 	VerifyService(authenticationHeader string, managerCredentials *ManagerLogInCredentials) error
 	getSpecialUserId(authenticationHeader string) error
 	SetStatusCode(statusCode int)
@@ -119,7 +119,7 @@ func (sl *SystemLog) Populate(request *http.Request, service map[string]string, 
 	if !isExemptModel(strings.ToLower(sl.Object)) {
 		authenticationHeader := request.Header.Get("Authorization")
 		if sl.Object == "Service" {
-			if err := sl.CheckSessions(managerCredentials); err != nil {
+			if err := sl.CheckSessions(managerCredentials, authenticationHeader); err != nil {
 				log.Println("There was an error:\n" + err.Error())
 				err := sl.getCitizen(request, managerCredentials)
 				if err != nil {
@@ -268,7 +268,28 @@ func (sl *SystemLog) VerifyService(authenticationHeader string, managerCredentia
 	return nil
 }
 
-func (sl *SystemLog) CheckSessions(managerCredentials *ManagerLogInCredentials) error {
+func (sl *SystemLog) CheckSessions(managerCredentials *ManagerLogInCredentials, authenticationHeader string) error {
+
+	if sl.RecordId == "" {
+		return fmt.Errorf("service error")
+	}
+
+	req, err := http.NewRequest("GET", CentralDomain+"service/"+sl.RecordId+"/", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authenticationHeader)
+	resp1, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp1.Body.Close()
+	if resp1.StatusCode == http.StatusOK || resp1.StatusCode == http.StatusFound {
+		return nil
+	} else if resp1.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("Authentication failed")
+	}
 	if sl.IpAddress == "unknown" || sl.IpAddress == "" {
 		return fmt.Errorf("Authentication Failed")
 	}
