@@ -31,6 +31,8 @@ The system is composed of several interconnected components, designed for modula
   * **Frontend (Next.js/TypeScript)**: The user-facing interface of the system is a modern web application built with Next.js (React) and TypeScript. It offers distinct portals tailored for different user roles—Citizen, Site Manager, Administrator, and Grantee—providing intuitive interfaces for interacting with the system's functionalities.
   * **Monitoring (Prometheus & Grafana)**: For operational visibility and system health, the project integrates with Prometheus for collecting various system and application metrics, and Grafana for visualizing these metrics through interactive dashboards, enabling proactive monitoring and issue detection.
 
+**NB: FOR NEWLY REGISTERED SERVICES TO BE INCOPERATED IN THE SYSTEM THE GATEWAY HAS TO ME REBOOTED, AS SUCH I RECOMMEND THAT ALL REBOOTS TAKE PLACE AT MIDNIGHT**
+
 ## 3\. Key Technologies
 
 The project leverages a modern and robust technology stack, chosen for its efficiency, security features, and community support:
@@ -135,6 +137,12 @@ To set up the project locally:
 Upon successful execution, the frontend application will be accessible via a web browser (typically at `http://localhost:3001` or a configured port), and the backend APIs, gateway, database, and monitoring tools will be running in the background.
 
 **NB: Note that the system is not be used until all the docker containers are running**
+**NB: The default Manager Account credentials are the following:**
+    - ManagerUserName=A3R0
+    - ManagerPassword=12345678
+    - Email=null@gmail.com
+    - Password=12345678
+**NB: FOR NEWLY REGISTERED SERVICES TO BE INCOPERATED IN THE SYSTEM THE GATEWAY HAS TO ME REBOOTED, AS SUCH I RECOMMEND THAT ALL REBOOTS TAKE PLACE AT MIDNIGHT**
 
 ### 6.1. Grafana Instructions
 

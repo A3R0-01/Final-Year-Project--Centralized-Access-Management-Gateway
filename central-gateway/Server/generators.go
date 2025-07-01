@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/url"
+	"os"
 
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/types"
 	"github.com/A3R0-01/Final-Year-Project--Centralized-Access-Management-Gateway/central-gateway/verify"
@@ -29,9 +30,16 @@ func NewEndpoint(serviceName string, machineName string, fixedPath string, servi
 
 func generateManagerCredentials() *types.ManagerLogInCredentials {
 	return &types.ManagerLogInCredentials{
-		ManagerUserName: "A3R0",
-		ManagerPassword: "bsrvnttngjltzl",
-		Email:           "erlsontmadara@gmail.com",
-		Password:        "1234bsrvnt",
+		ManagerUserName: getEnvOrDefault("ManagerUserName", "A3R0"),
+		ManagerPassword: getEnvOrDefault("ManagerPassword", "12345678"),
+		Email:           getEnvOrDefault("Email", "null@gmail.com"),
+		Password:        getEnvOrDefault("Password", "12345678"),
 	}
+}
+
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

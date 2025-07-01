@@ -25,6 +25,12 @@ services:
       - RUDI_URL=http://127.0.0.1:8002
       - RUDI_URL2=http://127.0.0.1:8001
       - CENTRAL_ACCESS_URL=http://172.17.0.1:8000/api/
+      - ManagerUserName=A3R0
+      - ManagerPassword=12345678
+      - Email=null@gmail.com
+      - password=12345678
+
+
   
   nextjs:
     build:
@@ -85,9 +91,10 @@ services:
       - POSTGRES_PASSWORD=bsrvnt
     command: >
       sh -c "python manage.py makemigrations &&
-             python manage.py migrate && \
-             (python manage.py shell -c 'from core.citizen.models import Citizen; exit(0) if Citizen.objects.exists() else exit(1)' || python manage.py loaddata data.json) && \
-             python manage.py runserver 0.0.0.0:8000"
+         python manage.py migrate && \
+         (python manage.py shell -c \"import sys; from core.citizen.models import Citizen; sys.exit(0) if Citizen.objects.exists() else sys.exit(1)\" || python manage.py loaddata data.json) && \
+         python manage.py runserver 0.0.0.0:8000"
+        
     depends_on:
       - core_access_db
 
