@@ -134,6 +134,8 @@ To set up the project locally:
 
 Upon successful execution, the frontend application will be accessible via a web browser (typically at `http://localhost:3001` or a configured port), and the backend APIs, gateway, database, and monitoring tools will be running in the background.
 
+**NB: Note that the system is not be used until all the docker containers are running**
+
 ### 6.1. Grafana Instructions
 
 Grafana is included in the `docker-compose.yml` setup and configured to automatically discover the Prometheus data source.
