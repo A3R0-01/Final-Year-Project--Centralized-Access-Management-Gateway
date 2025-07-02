@@ -1,3 +1,6 @@
+# ERLSON TADIWA MADARA 
+# R216991R
+# HCS
 # Project Guideline: Centralized Access Management Gateway
 
 This document provides a comprehensive guideline for the "Centralized Access Management Gateway" project, outlining its purpose, architecture, key functionalities, detailed instructions on how different user roles interact with the system from a frontend perspective, and setup/deployment including monitoring configurations.
@@ -135,14 +138,43 @@ To set up the project locally:
       * Docker Compose will manage the network configuration, volume mounting for persistent data (e.g., PostgreSQL data), and ensure services start in the correct order.
 
 Upon successful execution, the frontend application will be accessible via a web browser (typically at `http://localhost:3001` or a configured port), and the backend APIs, gateway, database, and monitoring tools will be running in the background.
+## TAKE NOTE OF THE FOLLOWING
+1. **NB: Note that the system is not be used until all the docker containers are running**
+2. **NB: The default Manager Account credentials are the following:**
+    * ManagerUserName=A3R0
+    * ManagerPassword=12345678
+    * Email=null@gmail.com
+    * Password=12345678
 
-**NB: Note that the system is not be used until all the docker containers are running**
-**NB: The default Manager Account credentials are the following:**
-    - ManagerUserName=A3R0
-    - ManagerPassword=12345678
-    - Email=null@gmail.com
-    - Password=12345678
-**NB: FOR NEWLY REGISTERED SERVICES TO BE INCOPERATED IN THE SYSTEM THE GATEWAY HAS TO ME REBOOTED, AS SUCH I RECOMMEND THAT ALL REBOOTS TAKE PLACE AT MIDNIGHT**
+3. **NB: IF THE PASSWORD SHOULD EVER BE CHANGED THE PASSWORDS IN THE “docker-compose.yml” FILE SHOULD ALSO BE CHANGED**
+```yaml
+
+  central_gateway:
+    build:
+      context: ./central-gateway
+      dockerfile: DockerFile
+    container_name: central_gateway-container
+    ports:
+      - "8020:8020"
+    depends_on:
+      - core_access
+    restart: unless-stopped
+    volumes:
+      # For development - mount source code
+      - ./central-gateway:/app
+    environment:
+      - CENTRAL_DOMAIN=http://172.17.0.1:8000/api/
+      - RUDI_URL=http://127.0.0.1:8002
+      - RUDI_URL2=http://127.0.0.1:8001
+      - CENTRAL_ACCESS_URL=http://172.17.0.1:8000/api/
+      - ManagerUserName=A3R0
+      - ManagerPassword=12345678
+      - Email=null@gmail.com
+      - password=12345678
+
+```
+
+4. **NB: FOR NEWLY REGISTERED SERVICES TO BE INCOPERATED IN THE SYSTEM THE GATEWAY HAS TO ME REBOOTED, AS SUCH I RECOMMEND THAT ALL REBOOTS TAKE PLACE AT MIDNIGHT**
 
 ### 6.1. Grafana Instructions
 
